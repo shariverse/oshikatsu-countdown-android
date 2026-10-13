@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">設定</string>
+    <string name="settings_display_header">表示</string>
+    <string name="settings_show_past_title">終わった予定も表示する</string>
+    <string name="settings_show_past_supporting">ホームの下に、過ぎた予定を新しい順に出します</string>
+    <string name="settings_data_header">データ</string>
+    <string name="settings_data_local_title">この端末の中だけに保存</string>
+    <string name="settings_data_local_supporting">推し・写真・予定は端末の外に送りません。アプリを削除すると消えます。</string>
+    <string name="settings_about_header">このアプリについて</string>
+    <string name="settings_version_title">バージョン</string>
+    <string name="settings_licenses_title">オープンソースライセンス</string>
+    <string name="settings_licenses_supporting">このアプリで使っているライブラリとライセンス</string>
+    <string name="licenses_title">オープンソースライセンス</string>
+</resources>

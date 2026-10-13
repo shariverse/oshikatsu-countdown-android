@@ -1,0 +1,30 @@
+version: 2
+
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Kotlin は AGP が内蔵する版に合わせる。AGP を上げるときに一緒に手で上げる
+      - dependency-name: "org.jetbrains.kotlin:*"
+      - dependency-name: "org.jetbrains.kotlin.*"
+      # 以下は、この版から POM の kotlin-stdlib が 2.3 以上になり、内蔵の Kotlin 2.2 では使えない。
+      # Hilt の Gradle プラグインは制約を受けないが、ライブラリと版を共有しているので一緒に止める
+      - dependency-name: "com.google.dagger:*"
+        versions: [">= 2.60"]
+      - dependency-name: "com.google.dagger.hilt.android"
+        versions: [">= 2.60"]
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-serialization-*"
+        versions: [">= 1.10"]
+      - dependency-name: "com.mikepenz:aboutlibraries-compose-m3"
+        versions: [">= 13.2"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 予定を選ぶ画面のウィンドウの地。画面の地（OshikatsuDesignTokens の background）と同じ色 -->
+    <color name="widget_configure_window_background">#FCF8FA</color>
+</resources>

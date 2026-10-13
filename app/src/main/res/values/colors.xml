@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- アイコンの背景。アプリのアクセント（推し色のピンク） -->
+    <color name="ic_launcher_background">#C8326A</color>
+    <!-- 起動画面とウィンドウの地。画面の地（OshikatsuDesignTokens の background）と同じ色 -->
+    <color name="window_background">#FCF8FA</color>
+</resources>

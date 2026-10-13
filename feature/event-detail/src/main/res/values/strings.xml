@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_until_start">%1$sまで</string>
+    <string name="detail_until_day">当日まで</string>
+    <string name="detail_today_title">今日は当日！</string>
+    <string name="detail_today_message">楽しんできてね</string>
+    <string name="detail_ended_title">終わった予定</string>
+    <string name="detail_remaining_description">残り %1$d 日 %2$d 時間 %3$d 分</string>
+    <string name="detail_progress_start">登録 %1$s</string>
+    <string name="detail_progress_end">当日 %1$s</string>
+    <string name="detail_progress_percent">%1$d%% 経過</string>
+    <string name="detail_date_title">日時</string>
+    <string name="detail_date_time">%1$s %2$s %3$s</string>
+    <string name="detail_venue_title">会場・場所</string>
+    <string name="detail_repeat_title">くり返し</string>
+    <string name="detail_repeat_yearly">毎年この日を数えます</string>
+    <string name="detail_pin">ピン留めする</string>
+    <string name="detail_unpin">ピン留めを外す</string>
+    <string name="detail_delete">予定を削除</string>
+    <string name="detail_delete_confirm_title">この予定を削除しますか？</string>
+    <string name="detail_delete_confirm_message">「%1$s」を削除します。元に戻せません。</string>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 推しの一覧 -->
+    <string name="oshi_list_title">推し</string>
+    <string name="oshi_list_add">推しを登録</string>
+    <plurals name="oshi_list_event_count">
+        <item quantity="other">予定 %1$d 件</item>
+    </plurals>
+    <string name="oshi_list_empty_title">推しを登録しよう</string>
+    <string name="oshi_list_empty_message">名前と推し色を登録すると、予定やカウントダウンが推し色になります。</string>
+
+    <!-- 推しの登録・編集 -->
+    <string name="oshi_editor_title_add">推しを登録</string>
+    <string name="oshi_editor_title_edit">推しを編集</string>
+    <!-- 「1 / 2」は分数ではなく何歩目か -->
+    <string name="oshi_editor_onboarding_step" tools:ignore="TypographyFractions">ステップ 1 / 2</string>
+    <string name="oshi_editor_onboarding_skip">あとで</string>
+    <string name="oshi_editor_onboarding_heading">あなたの推しを教えてね</string>
+    <string name="oshi_editor_onboarding_next">次へ：最初の予定を登録</string>
+    <string name="oshi_editor_pick_photo">写真を選ぶ</string>
+    <string name="oshi_editor_change_photo">写真を変える</string>
+    <string name="oshi_editor_remove_photo">写真を外す</string>
+    <string name="oshi_editor_name_label">推しの名前</string>
+    <string name="oshi_editor_color_label">推し色（メンバーカラー）</string>
+    <string name="oshi_editor_privacy_note">写真と推し色はこの端末の中だけに保存されます</string>
+    <string name="oshi_editor_delete">推しを削除</string>
+    <string name="oshi_editor_delete_confirm_title">「%1$s」を削除しますか？</string>
+    <plurals name="oshi_editor_delete_confirm_message_with_events">
+        <item quantity="other">この推しの予定 %1$d 件も削除されます。元に戻せません。</item>
+    </plurals>
+    <string name="oshi_editor_delete_confirm_message">元に戻せません。</string>
+</resources>

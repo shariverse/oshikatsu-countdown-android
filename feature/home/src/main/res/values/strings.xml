@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">推し活カウントダウン</string>
+    <string name="home_add_event">予定を追加</string>
+    <string name="home_filter_all">すべて</string>
+    <string name="home_featured_pinned">ピン留め</string>
+    <string name="home_featured_nearest">いちばん近い予定</string>
+    <string name="home_upcoming_title">これからの予定</string>
+    <string name="home_past_title">終わった予定</string>
+    <string name="home_empty_title">まだ予定がありません</string>
+    <string name="home_empty_message">ライブ・誕生日・発売日を登録すると、その日まであと何日かを数えます。</string>
+    <string name="home_empty_filtered">この推しの予定はまだありません</string>
+    <string name="home_upcoming_empty">これからの予定はありません</string>
+    <!-- 一覧の行の補足。日付と推しの名前（毎年くり返す予定は「毎年」）を「·」でつなぐ -->
+    <string name="home_row_supporting">%1$s · %2$s</string>
+    <string name="home_start_time">%1$s %2$s</string>
+</resources>

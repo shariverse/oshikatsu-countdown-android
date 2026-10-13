@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 推し色 -->
+    <string name="oshi_color_pink">ピンク</string>
+    <string name="oshi_color_red">レッド</string>
+    <string name="oshi_color_orange">オレンジ</string>
+    <string name="oshi_color_yellow">イエロー</string>
+    <string name="oshi_color_green">グリーン</string>
+    <string name="oshi_color_mint">ミント</string>
+    <string name="oshi_color_blue">ブルー</string>
+    <string name="oshi_color_navy">ネイビー</string>
+    <string name="oshi_color_purple">パープル</string>
+    <string name="oshi_color_lavender">ラベンダー</string>
+    <string name="oshi_color_brown">ブラウン</string>
+    <string name="oshi_color_black">ブラック</string>
+
+    <!-- 予定の種類と、開始の時刻の呼び名 -->
+    <string name="event_type_live">ライブ</string>
+    <string name="event_type_birthday">誕生日</string>
+    <string name="event_type_release">発売日</string>
+    <string name="event_type_stream">配信</string>
+    <string name="event_type_other">その他</string>
+    <string name="event_start_live">開演</string>
+    <string name="event_start_release">発売</string>
+    <string name="event_start_stream">配信開始</string>
+    <string name="event_start_default">開始</string>
+
+    <!-- カウントダウン -->
+    <string name="countdown_prefix">あと</string>
+    <string name="countdown_day_unit">日</string>
+    <string name="countdown_today">今日！</string>
+    <plurals name="countdown_days_ago">
+        <item quantity="other">%1$d 日前</item>
+    </plurals>
+    <string name="event_repeats_yearly">毎年</string>
+    <string name="event_no_oshi">推しなし</string>
+
+    <!-- 共通 -->
+    <string name="save">保存</string>
+    <string name="cancel">キャンセル</string>
+    <string name="delete">削除</string>
+    <string name="close">閉じる</string>
+    <string name="back">戻る</string>
+    <string name="edit">編集</string>
+    <string name="more_options">その他の操作</string>
+    <string name="load_error">データを読み込めませんでした</string>
+    <string name="save_error">保存できませんでした</string>
+    <string name="delete_error">削除できませんでした</string>
+</resources>

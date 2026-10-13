@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 1 件のウィジェット。置くときに予定を選ぶ。Android 12 以降は長押しで選び直せる。
+     targetCell* は Android 12 以降だけが読み、11 では minWidth / minHeight で大きさが決まる -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:configure="com.basekeita.oshikatsucountdown.feature.widget.WidgetConfigureActivity"
+    android:description="@string/widget_countdown_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable"
+    tools:ignore="UnusedAttribute" />

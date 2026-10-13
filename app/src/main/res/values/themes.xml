@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 画面は Compose の OshikatsuTheme が塗る。起動直後や画面の切り替えで地が白く光らないよう、ウィンドウの地を画面の地とそろえる -->
+    <style name="Theme.OshikatsuCountdown" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!-- 起動画面。アイコンの既定はライブラリの汎用アイコンなので、アプリのアイコンを指定する -->
+    <style name="Theme.OshikatsuCountdown.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.OshikatsuCountdown</item>
+    </style>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 画面は Compose の OshikatsuTheme が塗る。開いた直後に地が光らないよう、ウィンドウの地を画面の地とそろえる -->
+    <style name="Theme.OshikatsuWidgetConfigure" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/widget_configure_window_background</item>
+    </style>
+</resources>

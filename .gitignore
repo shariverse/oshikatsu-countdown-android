@@ -1,0 +1,14 @@
+*.iml
+.gradle
+/local.properties
+# IDE の設定は追跡しない。モジュール構成・JDK は Gradle、書式は .editorconfig と ktlint が正
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+# 各モジュール・build-logic のビルド出力
+build/
+.kotlin/

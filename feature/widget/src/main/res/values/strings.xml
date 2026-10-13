@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ウィジェットの一覧に出す名前と説明 -->
+    <string name="widget_countdown_label">カウントダウン</string>
+    <string name="widget_countdown_description">選んだ予定まであと何日かを推し色で表示します</string>
+    <string name="widget_upcoming_label">推しカウント</string>
+    <string name="widget_upcoming_description">これからの予定を近い順に表示します</string>
+
+    <!-- 1 件のウィジェット -->
+    <string name="widget_event_not_found">予定が見つかりません</string>
+    <string name="widget_event_choose_again">タップして予定を選び直す</string>
+
+    <!-- 推しカウント -->
+    <string name="widget_upcoming_title">推しカウント</string>
+    <string name="widget_add_event">予定を追加</string>
+    <string name="widget_upcoming_empty">これからの予定はありません</string>
+    <string name="widget_days">%1$d日</string>
+
+    <!-- 1 件のウィジェットに出す予定を選ぶ画面 -->
+    <string name="configure_title">表示する予定を選ぶ</string>
+    <string name="configure_empty">これからの予定がありません。アプリで予定を追加してから選んでください。</string>
+    <string name="configure_selected">表示中</string>
+    <!-- 行の補足。日付と推しの名前を「·」でつなぐ -->
+    <string name="configure_row_supporting">%1$s · %2$s</string>
+</resources>

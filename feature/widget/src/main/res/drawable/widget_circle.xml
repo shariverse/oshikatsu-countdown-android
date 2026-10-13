@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ウィジェットの丸（推しカウントの推し色の印、＋ の地）。色は tint で付ける。
+     角丸の modifier は Android 12 以降でしか効かないので、丸はこの形で描く -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#FFFFFFFF" />
+</shape>

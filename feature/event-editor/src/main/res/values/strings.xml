@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="editor_title_add">予定を追加</string>
+    <string name="editor_title_edit">予定を編集</string>
+    <!-- 「1 / 2」は分数ではなく何歩目か -->
+    <string name="editor_onboarding_step" tools:ignore="TypographyFractions">ステップ 2 / 2</string>
+    <string name="editor_onboarding_heading">最初の予定を登録しよう</string>
+    <string name="editor_onboarding_message">ライブ・誕生日・発売日など、楽しみな日を 1 つ入れてみてね。</string>
+    <string name="editor_onboarding_skip">あとで</string>
+    <string name="editor_onboarding_save">保存してはじめる</string>
+    <string name="editor_oshi_label">推し</string>
+    <string name="editor_type_label">種類</string>
+    <string name="editor_title_label">タイトル</string>
+    <string name="editor_title_placeholder">例：5th LIVE 東京公演</string>
+    <string name="editor_date_label">日付</string>
+    <string name="editor_time_label">開始時刻（任意）</string>
+    <string name="editor_time_placeholder">未定</string>
+    <string name="editor_time_clear">開始時刻を消す</string>
+    <string name="editor_time_dialog_title">開始時刻</string>
+    <string name="editor_venue_label">会場・場所（任意）</string>
+    <string name="editor_repeat_title">毎年くり返す</string>
+    <string name="editor_repeat_supporting">誕生日や記念日は、過ぎたら翌年の同じ日を数えます</string>
+    <string name="editor_ok">OK</string>
+</resources>

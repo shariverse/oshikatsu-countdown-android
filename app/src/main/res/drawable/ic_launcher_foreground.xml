@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- アイコンの前景。白いハートをセーフゾーン（中心から半径 33dp）の内側に収める -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,76C54,76 32,62 32,46.5C32,39.6 37.4,34 44,34C48.2,34 51.9,36.2 54,39.6C56.1,36.2 59.8,34 64,34C70.6,34 76,39.6 76,46.5C76,62 54,76 54,76Z" />
+</vector>
