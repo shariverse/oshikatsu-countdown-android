@@ -173,23 +173,50 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 ```
 feature/<name>/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/<name>/
   <Name>Screen.kt              Route（hiltViewModel を持つ唯一の Composable）と UI
-  <Name>ViewModel.kt           @HiltViewModel。ViewState / UiState をこのファイル内に定義
+  <Name>ViewModel.kt           @HiltViewModel。UiState をこのファイル内に定義
   <Name>Navigation.kt          EntryProviderScope<NavKey>.<name>Entry(onNavigationEvent)
   <Name>NavigationEvent.kt     sealed interface
   uimodel/                     この画面専用の UiModel
   ui/molecules/                この画面専用の部品
 ```
 
-- ViewState（`Loading` / `Error` / `Success(uiState)`）と UiState を分ける。予定の詳細は予定が無いときの `NotFound` も持つ
-- ViewModel は Repository の `Flow` と ViewModel 内の一時状態（絞り込み・入力中の値・保存中）を `combine` し、UiModel に変換して `stateIn(WhileSubscribed(5_000))` で公開する
+#### 画面の状態（UiState）
+
+Android 公式の UI 層のガイド（[UI レイヤ](https://developer.android.com/topic/architecture/ui-layer)、
+[UI の状態の生成](https://developer.android.com/topic/architecture/ui-layer/state-production)、
+[UI イベント](https://developer.android.com/topic/architecture/ui-layer/events)）を土台にし、その上にこのリポジトリの決めごとを足す。
+
+ガイドにあるもの:
+
+- 画面の状態は不変の `data class XxxUiState` にし、`StateFlow` で公開する。読み込み中も `isLoading` のような項目で表す
+- 項目から決まる値（`canSave`・`canClose` など）は項目として持たず、UiState のプロパティで計算する
+- 入力など画面の操作で変わる状態は `MutableStateFlow` に持ち、`update { }` で変える。
+  Repository の `Flow` と時刻の `flow` はそれと `combine` して UiState にし、`stateIn(WhileSubscribed(5_000), initialValue = XxxUiState())` で公開する
+- `init` で非同期の処理を始めない（状態を作る処理は購読されてから始める）
+- ViewModel から画面への知らせ（保存し終えた・書き込みの失敗）は一度きりのイベント（`Channel` / `SharedFlow`）にせず UiState の項目にし、
+  画面が処理し終えたら ViewModel の関数で戻す
+
+このリポジトリの決めごと（ガイドは、流れてくるデータから作る状態を sealed（Loading / Success など）にする例や、関係の無い状態を別の `StateFlow` で公開する例も載せている。
+このリポジトリは入力の画面で状態が分かれないよう、全画面で次のようにそろえる）:
+
+- 画面の状態は画面ごとに 1 つのフラットな UiState にまとめ、`StateFlow<XxxUiState>` 1 本で公開する。項目には既定値を置き、最初の値は `XxxUiState()` にする
+  - 読めなかった（`isLoadFailed`）・予定が無い（`isNotFound`。予定の詳細）も UiState の項目にする。画面全体を sealed（Loading / Error / Success）で包まない
+  - ドメインモデルは入れない
+- 画面が持つ状態（入力中の値・絞り込み・保存中・終わった・書き込みの失敗・編集元から引き継ぐ値）は、private な `MutableStateFlow` 1 つにまとめる。
+  状態のための `MutableStateFlow` や `var` を別に作らない。画面が持つ状態の無い画面は、Repository の `Flow` の `combine` だけで作る
+- 保存を始めてよいかなど、判断に使う値は private な `MutableStateFlow` の今の値から読む（公開の状態は `combine` を通って遅れて届くため）
+- 項目をまたぐ入力の規則（誕生日を選ぶと毎年くり返す、など）は UiModel の純粋な関数にし、ViewModel は `update` の中で呼ぶ。テストはその関数に対して書く
+- 入力の画面の最初の値（編集元）は、`combine` の上流の `onStart` で 1 回だけ読んで private な `MutableStateFlow` に入れる。読めなければ `.catch` で `isLoadFailed` にする
+
+#### 画面の引数・遷移・書き込み
+
 - 画面の引数（予定・推しの id、導線かどうか）は `@HiltViewModel(assistedFactory = ...)` で ViewModel に渡し、Route は `hiltViewModel(creationCallback = ...)` で作る
-- 保存・削除し終えてから画面を閉じる。入力の画面は UiState の `isFinished`、予定の詳細は `NotFound` を見て遷移の要求を返す
+- 保存・削除し終えてから画面を閉じる。入力の画面は UiState の `isFinished`、予定の詳細は `isNotFound` を見て遷移の要求を返す
   （先に閉じるとエントリの ViewModel ごと `viewModelScope` が止まり、書き込みが途中で切れるため）。
   閉じる画面（入力の画面・予定の詳細・ウィジェットの予定を選ぶ画面）は、書き込みの途中は UiState の `canClose` を false にし、
   閉じる・戻るボタンを押せなくして `BackHandler` で戻る操作を止める
 - 書き込みの `IOException` は ViewModel で受け、UiState の `writeFailure`（`WriteFailureUiModel`）にして `WriteFailureSnackbar` で知らせる。
   出し終えたら `onWriteFailureShown` で null に戻す。保存中の状態も戻し、もう一度保存できるようにする
-- 入力の画面の最初の値は `viewState` の上流の `onStart` で読み、読めなければ `.catch` で `Error` にする
 - 初回の導線を終えたことを保存できなくても、そのプロセスの間は終えたものとして扱う（`MainViewModel`）
 - 時間で変わる表示は ViewModel の中の `flow` で時刻を流して作る。ホームは 1 分おきに日付、予定の詳細は秒の変わり目ごとに時刻
 - 子 Composable には意味のあるコールバックを個別に渡す（`onIntent` / `viewModel` を渡さない）
