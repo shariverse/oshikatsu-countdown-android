@@ -81,25 +81,29 @@ feature/*        ←  app
 - **DataSource（local）は Repository を参照してはいけない**
 - **Repository は他の Repository に依存してはいけない**
 - **ドメインモデルを UI 層（ViewModel の公開状態・Screen）で直接使ってはいけない**（UI 専用モデル `XxxUiModel` を定義してマッピングする）
-- **UiState に isLoading や errorMessage を混在させてはいけない**（ViewState / UiState 分離パターンを使う）
+- **画面の状態を UiState の外（状態のための別の `MutableStateFlow`・`var`）に持ってはいけない**
 - **保存・削除を始めてすぐに画面を閉じてはいけない**（終わってから閉じる。先に閉じると `viewModelScope` ごと書き込みが止まる）
 - 下位層に値が必要な場合は、上位層からメソッド引数として渡す
 - コードの配置はモジュールの責務に従う。一箇所でしか使われないコードを利便性を理由に共有モジュールに置かない
 
-### ViewState / UiState の分離（全 ViewModel で必須）
+### フラットな UiState（全 ViewModel で必須）
+
+> Android 公式の UI 層のガイドを土台にした、このリポジトリの決めごと。ガイドは sealed の UiState や複数の `StateFlow` も認めているが、ここでは全画面でフラットな UiState にそろえる。
+> ガイドにあるものと決めごとの区別は `docs/architecture.md` の「画面の状態（UiState）」。
 
 ```kotlin
-sealed interface ViewState {
-    data object Loading : ViewState
-    data class Error(val message: String) : ViewState
-    data class Success(val uiState: UiState) : ViewState
-}
-
-data class UiState(/* UI 専用モデルのみ */)
+data class XxxUiState(
+    val isLoading: Boolean = true,
+    val isLoadFailed: Boolean = false,
+    /* UI 専用モデルのみ。項目には既定値を置く */
+)
 ```
 
-- `Loading` は単純に「ローディング中」。呼び出し経緯（初回・再ロード）で振る舞いを変えない
-- UiState / ViewState で管理できる状態を別の StateFlow で新設しない
+- 画面の状態はフラットな UiState 1 つで公開する。画面全体を sealed（Loading / Error / Success）で包まない
+- 画面が持つ状態は private な `MutableStateFlow` 1 つにまとめ、`update { }` で変える。Repository の `Flow` はそれと `combine` して `stateIn` で公開する
+- 判断に使う値は private な `MutableStateFlow` の今の値から読む（公開の状態は `combine` を通って遅れて届く）
+- 項目から決まる値は持たずに UiState のプロパティで計算する。項目をまたぐ入力の規則は UiModel の純粋な関数にしてテストする
+- ViewModel から画面への知らせは一度きりのイベント（`Channel` / `SharedFlow`）にせず、UiState の項目にする
 
 ### ViewModel の onIntent を Composable にバケツリレーしない（厳守）
 

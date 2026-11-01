@@ -57,5 +57,5 @@ domain/                  UseCase と計算の関数
 data/
   definition/            ドメインモデル、Repository の interface
   impl/                  Repository の実装
-local/                   DataStore、写真の取り込み先
+local/                   Room（推し・予定）、DataStore（設定）、写真の取り込み先
 ```
