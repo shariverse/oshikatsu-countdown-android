@@ -14,7 +14,7 @@
 | applicationId | `com.basekeita.oshikatsucountdown` |
 | DI | Hilt（画面の引数を受ける ViewModel は assisted injection） |
 | 画面遷移 | Navigation 3 |
-| ローカル保存 | DataStore（Preferences）に JSON、写真はアプリの内部ストレージ |
+| ローカル保存 | 推し・予定は Room、設定は DataStore（Preferences）、写真はアプリの内部ストレージ |
 | 時刻 | `java.time`。「今」は Hilt で渡す `Clock` から読む |
 | ホーム画面ウィジェット | Jetpack Glance（`glance-appwidget`） |
 | ライセンスの一覧 | AboutLibraries（ビルド時に app の依存から一覧を作る Gradle プラグインと、表示の `aboutlibraries-compose-m3`） |
@@ -67,7 +67,7 @@ domain/                   UseCase と計算の関数（カウントダウン、�
 data/
   definition/             ドメインモデル、Repository の interface
   impl/                   Repository の実装、Hilt の @Binds
-local/                    DataStore と写真の取り込み先、Hilt の @Provides
+local/                    Room（推し・予定）と DataStore（設定）、写真の取り込み先、Hilt の @Provides
 ```
 
 ### モジュール依存関係
@@ -143,10 +143,10 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 
 ### local
 
-- DataStore（Preferences、`oshikatsu_prefs`）。キーは `oshis` / `events`（JSON の配列）、`showPastEvents` / `onboardingCompleted`（Boolean）
-- JSON の形は `StoredOshi` / `StoredEvent`。日付は `yyyy-MM-dd`、時刻は `HH:mm`、登録した時刻は UNIX 時間のミリ秒。
-  後から足す項目には既定値を置き、知らないキーは読み飛ばす。既定値と同じ値も省かずに書く（`encodeDefaults`）
-- 形が違う・id が UUID として読めない JSON は全体を読めないものとして `null` を流す。書き換えは `updateOshis` / `updateEvents` で 1 回の `edit` の中で行う
+- 推し・予定は Room に保存する。推しと予定はそれぞれのテーブルにし、予定は推しの id（`oshiId`）で推しに結び付ける。
+  推し・予定は関係を持つ一覧で、1 件ずつの保存・削除と、推しを消したら結び付いた予定も消す整合が要るため
+  （DataStore は小さなデータ向けで、部分的な更新と参照の整合を持たない。[DataStore](https://developer.android.com/topic/libraries/architecture/datastore)）
+- 設定（`showPastEvents` / `onboardingCompleted`）は DataStore（Preferences、`oshikatsu_prefs`）の Boolean のキーに置く
 - `PhotoLocalDataSource`: Photo Picker の URI を `ImageDecoder` で読み、長辺 1440px 以下の JPEG にして `files/oshi_photos/` に書く。書き出しに失敗したら書きかけのファイルを消して `null`。消すのはその中のファイルだけ
 - 推し・写真・予定は端末の外に出さない。自動バックアップは `allowBackup="false"` で切り、
   それだけでは止まらない機種がある Android 12 以降の端末間の移行も `data_extraction_rules.xml` で全部除く
@@ -154,7 +154,6 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 ### data:impl
 
 - Repository の実装と `DataModule`（`@Binds` と、`@DefaultDispatcher` の `Dispatchers.Default`）
-- 推し・予定の `Flow` は `flowOn(@DefaultDispatcher)` で、全件の JSON のデコードと整形を購読する側（ViewModel の Main）で走らせない
 - 保存値との対応（`StoredDataMapping`）。推し色・種類は enum の名前ではなく書き出した保存値で持つ。知らない値は既定（推し色はピンク、種類はその他）に戻す
 - 読み込んだデータを整える: 名前・タイトルが空になるもの、日付が読めない予定は読み飛ばす。時刻が読めなければ時刻なし。重複した id は先のものだけ残す
 
