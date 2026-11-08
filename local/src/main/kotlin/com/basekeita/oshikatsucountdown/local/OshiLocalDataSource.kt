@@ -16,13 +16,10 @@ constructor(
     /** 登録した順。読めないときは空。 */
     val oshis: Flow<List<OshiEntity>> = oshiDao.getOshiEntities().emptyOnDatabaseError()
 
-    /** 同じ [id] があれば置き換え、無ければ末尾に足す。行は [createEntity] に登録した順を渡して作る。 */
+    /** 同じ id があれば書き換え、無ければ足す。 */
     @Throws(IOException::class)
-    suspend fun upsertOshi(
-        id: UUID,
-        createEntity: (sortOrder: Long) -> OshiEntity,
-    ) {
-        writeDatabase { oshiDao.upsertOshi(id, createEntity) }
+    suspend fun upsertOshi(entity: OshiEntity) {
+        writeDatabase { oshiDao.upsertOshi(entity) }
     }
 
     /** 削除する。結び付いた予定も同じ書き込みで消える。 */

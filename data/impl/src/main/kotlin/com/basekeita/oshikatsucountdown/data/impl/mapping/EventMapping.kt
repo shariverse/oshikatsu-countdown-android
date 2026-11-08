@@ -30,7 +30,7 @@ internal fun EventEntity.toModel(): OshiEvent = OshiEvent(
     createdAt = createdAt,
 )
 
-internal fun OshiEvent.toEntity(sortOrder: Long): EventEntity = EventEntity(
+internal fun OshiEvent.toEntity(): EventEntity = EventEntity(
     id = id,
     oshiId = oshiId,
     type = type.storageKey,
@@ -41,5 +41,4 @@ internal fun OshiEvent.toEntity(sortOrder: Long): EventEntity = EventEntity(
     repeatsYearly = repeatsYearly,
     pinned = pinned,
     createdAt = createdAt,
-    sortOrder = sortOrder,
 )

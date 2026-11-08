@@ -77,8 +77,8 @@ class EventEditorViewModelTest {
         }
     }
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK)
-    private val minato = Oshi(name = "ミナト", color = OshiColor.BLUE)
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, createdAt = Instant.EPOCH)
+    private val minato = Oshi(name = "ミナト", color = OshiColor.BLUE, createdAt = Instant.EPOCH)
 
     private fun createViewModel(
         eventRepository: EventRepository = FakeEventRepository(),

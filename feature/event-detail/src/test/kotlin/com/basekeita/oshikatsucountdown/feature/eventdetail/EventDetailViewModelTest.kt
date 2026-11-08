@@ -96,7 +96,7 @@ class EventDetailViewModelTest {
         override suspend fun delete(id: UUID) = Unit
     }
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, photoPath = "/photos/lumina.jpg")
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, photoPath = "/photos/lumina.jpg", createdAt = Instant.EPOCH)
     private val live = OshiEvent(
         oshiId = lumina.id,
         type = EventType.LIVE,

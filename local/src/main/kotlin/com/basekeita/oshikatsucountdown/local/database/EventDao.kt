@@ -11,19 +11,12 @@ import java.util.UUID
 @Dao
 abstract class EventDao {
     /** 登録した順。 */
-    @Query("SELECT * FROM events ORDER BY sortOrder")
+    @Query("SELECT * FROM events ORDER BY createdAt")
     abstract fun getEventEntities(): Flow<List<EventEntity>>
 
-    /**
-     * 同じ [id] があれば置き換え、無ければ末尾に足す。行は [createEntity] に登録した順を渡して作る
-     * （既にある予定は今の順、新しい予定は末尾の次）。ピン留めした予定なら、ほかの予定のピン留めを外す。
-     */
+    /** 同じ id があれば書き換え、無ければ足す。ピン留めした予定なら、ほかの予定のピン留めを外す。 */
     @Transaction
-    open suspend fun upsertEvent(
-        id: UUID,
-        createEntity: (sortOrder: Long) -> EventEntity,
-    ) {
-        val entity = createEntity(getSortOrder(id) ?: getNextSortOrder())
+    open suspend fun upsertEvent(entity: EventEntity) {
         upsertEventEntity(entity)
         if (entity.pinned) {
             pinOnly(entity.id)
@@ -42,12 +35,6 @@ abstract class EventDao {
 
     @Query("DELETE FROM events WHERE oshiId = :oshiId")
     abstract suspend fun deleteEventsByOshi(oshiId: UUID)
-
-    @Query("SELECT sortOrder FROM events WHERE id = :id")
-    protected abstract suspend fun getSortOrder(id: UUID): Long?
-
-    @Query("SELECT IFNULL(MAX(sortOrder), 0) + 1 FROM events")
-    protected abstract suspend fun getNextSortOrder(): Long
 
     @Upsert
     protected abstract suspend fun upsertEventEntity(entity: EventEntity)

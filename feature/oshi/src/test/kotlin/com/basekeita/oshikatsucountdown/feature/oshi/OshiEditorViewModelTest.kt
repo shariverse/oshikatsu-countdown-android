@@ -20,15 +20,17 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
+import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OshiEditorViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PURPLE, photoPath = "/photos/lumina.jpg")
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PURPLE, photoPath = "/photos/lumina.jpg", createdAt = Instant.EPOCH)
 
     private class Fixture(
         oshis: List<Oshi> = emptyList(),
@@ -48,6 +50,7 @@ class OshiEditorViewModelTest {
             eventRepository = eventRepository,
             saveOshi = SaveOshiUseCase(oshiRepository, photoRepository),
             deleteOshi = DeleteOshiUseCase(oshiRepository, eventRepository, photoRepository),
+            clock = Clock.fixed(Instant.parse("2026-11-08T10:00:00Z"), ZoneOffset.UTC),
         )
     }
 

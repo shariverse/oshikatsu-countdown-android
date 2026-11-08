@@ -16,10 +16,10 @@ constructor(
     private val localDataSource: OshiLocalDataSource,
 ) : OshiRepository {
     override val oshis: Flow<List<Oshi>> =
-        localDataSource.oshis.map { entities -> entities.map { it.toModel() } }
+        localDataSource.oshis.map { entities -> entities.map { oshi -> oshi.toModel() } }
 
     override suspend fun save(oshi: Oshi) {
-        localDataSource.upsertOshi(oshi.id) { sortOrder -> oshi.toEntity(sortOrder) }
+        localDataSource.upsertOshi(oshi.toEntity())
     }
 
     override suspend fun delete(id: UUID) {

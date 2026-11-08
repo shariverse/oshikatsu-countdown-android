@@ -123,6 +123,7 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 - `model/`: `Oshi`、`OshiColor`、`OshiEvent`、`EventType`、`UserSettings`
   - 名前・タイトル・会場の正規化と上限はモデルに持たせる（`Oshi.normalizeName` / `MAX_NAME_LENGTH`、`OshiEvent.normalizeTitle` / `normalizeVenue`）
   - 文字数は見た目の 1 文字（書記素クラスタ）で数える（`takeCharacters`）
+  - 推し・予定は登録した時刻（`createdAt`）を持つ。一覧の並び（登録した順）に使い、編集しても変えない
 - `repository/`（interface）
   - `OshiRepository`: `oshis`、`save`（同じ id は置き換え）、`delete`（結び付いた予定も同じ書き込みで消す）
   - `EventRepository`: `events`、`save`、`delete`、`deleteByOshi`、`setPinned`（ピン留めは 1 件だけ）
@@ -148,9 +149,8 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
   （DataStore は小さなデータ向けで、部分的な更新と参照の整合を持たない。[DataStore](https://developer.android.com/topic/libraries/architecture/datastore)）
   - `database/`: `OshikatsuDatabase`（`oshikatsu.db`。テーブルの形は `local/schemas/` に書き出す）、`OshiDao` / `EventDao`。`database/model/` に `OshiEntity` / `EventEntity`、`database/util/` に列の型の `TypeConverter`（UUID・`LocalDate`・`LocalTime`・`Instant`）
   - 予定の `oshiId` は推しへの外部キー（`ON DELETE CASCADE`）。推しを消すと結び付いた予定も同じ書き込みで消える。結び付く推しが無い予定は保存できない
-  - 登録した順は `sortOrder` の列で持つ。保存は `@Upsert`（同じ id があれば行を書き換える）で、同じ id の `sortOrder` は変えない。
-    順番は DAO が 1 つのトランザクションの中で決め、行を作る関数（`createEntity(sortOrder)`）に渡す。
-    行を消して入れ直す `REPLACE` は、並びが変わり、推しなら結び付いた予定まで消すため使わない
+  - 一覧は登録した時刻（`createdAt`）の順に読む。保存は `@Upsert`（同じ id があれば行を書き換える）。
+    行を消して入れ直す `REPLACE` は、推しなら結び付いた予定まで消すため使わない
   - ピン留めは 1 件だけ。ピン留めした予定の保存と、ほかの予定のピン留めを外すのは 1 つのトランザクションで行う
   - `OshiLocalDataSource` / `EventLocalDataSource` は DAO を受け取り、読み込みの `Flow` と書き込みを持つ。行は Entity で受け渡す。
     データベースの失敗（`SQLException`）は、読み込みなら空を流し、書き込みなら `IOException` にして投げる（ViewModel が受ける書き込みの失敗にそろえる）
@@ -162,7 +162,7 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 ### data:impl
 
 - Repository の実装と `DataModule`（`@Binds`）
-- Entity とドメインモデルの対応は `mapping/` にモデルごとに置く（`OshiMapping` / `EventMapping` の `toModel()` / `toEntity(sortOrder)`）。項目を詰め替えるだけ
+- Entity とドメインモデルの対応は `mapping/` にモデルごとに置く（`OshiMapping` / `EventMapping` の `toModel()` / `toEntity()`）。項目を詰め替えるだけ
   - 推し色・種類は、enum の名前ではなく data:impl の対応表（`storageKey`）で決めたキー（`pink`・`bday` など）で持つ。保存の形はデータ層が決め、ドメインの enum は保存のことを知らない。
     enum の名前を変えても保存の値は変わらない。キーを変えるときはデータベースの版を上げて移す。対応表に無いキーは移行の誤りなので、既定に戻さず例外のままにする
   - 読むときに確かめ直さない。名前・タイトルの正規化と空のときの扱いは保存する前に済ませ、データベースにはこのアプリが保存した値しか入らないため

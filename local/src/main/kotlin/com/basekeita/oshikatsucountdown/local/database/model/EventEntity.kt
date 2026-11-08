@@ -13,7 +13,7 @@ import java.util.UUID
  * 予定の行。[oshiId] の推しを消すと、この予定も消える。
  *
  * @property type 予定の種類の保存のキー（`bday` など。対応は data:impl）。
- * @property sortOrder 登録した順。同じ id を保存し直しても変えない。
+ * @property createdAt 登録した時刻。一覧はこの順に並べる。
  */
 @Entity(
     tableName = "events",
@@ -38,5 +38,4 @@ data class EventEntity(
     val repeatsYearly: Boolean,
     val pinned: Boolean,
     val createdAt: Instant,
-    val sortOrder: Long,
 )

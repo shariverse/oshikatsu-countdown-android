@@ -27,18 +27,25 @@ class OshiLocalDataSourceTest {
     private val oshiDataSource = OshiLocalDataSource(database.oshiDao())
     private val eventDataSource = EventLocalDataSource(database.eventDao())
 
-    private val luminaId = UUID.randomUUID()
-    private val minatoId = UUID.randomUUID()
+    private val lumina = oshi("LUMINA", "pink", registeredSecond = 1)
+    private val minato = oshi("ミナト", "blue", registeredSecond = 2)
 
     private fun oshi(
-        id: UUID,
+        name: String,
         color: String,
-        sortOrder: Long,
-    ) = OshiEntity(id = id, name = "LUMINA", color = color, photoPath = null, sortOrder = sortOrder)
+        registeredSecond: Long,
+    ) = OshiEntity(
+        id = UUID.randomUUID(),
+        name = name,
+        color = color,
+        photoPath = null,
+        createdAt = Instant.ofEpochSecond(registeredSecond),
+    )
 
     private fun event(
         title: String,
         oshiId: UUID?,
+        registeredSecond: Long,
     ) = EventEntity(
         id = UUID.randomUUID(),
         oshiId = oshiId,
@@ -49,23 +56,8 @@ class OshiLocalDataSourceTest {
         venue = "",
         repeatsYearly = false,
         pinned = false,
-        createdAt = Instant.EPOCH,
-        sortOrder = 0,
+        createdAt = Instant.ofEpochSecond(registeredSecond),
     )
-
-    private suspend fun saveOshi(
-        id: UUID,
-        color: String,
-    ) {
-        oshiDataSource.upsertOshi(id) { sortOrder -> oshi(id, color, sortOrder) }
-    }
-
-    /** 保存し、登録した順を付けた行を返す。 */
-    private suspend fun saveEvent(entity: EventEntity): EventEntity {
-        var saved = entity
-        eventDataSource.upsertEvent(entity.id) { sortOrder -> entity.copy(sortOrder = sortOrder).also { saved = it } }
-        return saved
-    }
 
     @After
     fun closeDatabase() {
@@ -73,37 +65,36 @@ class OshiLocalDataSourceTest {
     }
 
     @Test
-    fun `推しは登録した順に並び保存し直しても並びと結び付いた予定は変わらない`() = testScope.runTest {
-        saveOshi(luminaId, "pink")
-        saveOshi(minatoId, "blue")
-        val live = saveEvent(event("5th LIVE", luminaId))
+    fun `推しは登録した順に並び保存し直しても結び付いた予定は消えない`() = testScope.runTest {
+        oshiDataSource.upsertOshi(minato)
+        oshiDataSource.upsertOshi(lumina)
+        val live = event("5th LIVE", lumina.id, registeredSecond = 1)
+        eventDataSource.upsertEvent(live)
 
-        saveOshi(luminaId, "purple")
+        oshiDataSource.upsertOshi(lumina.copy(color = "purple"))
 
-        assertEquals(
-            listOf(oshi(luminaId, "purple", sortOrder = 1), oshi(minatoId, "blue", sortOrder = 2)),
-            oshiDataSource.oshis.first(),
-        )
+        assertEquals(listOf(lumina.copy(color = "purple"), minato), oshiDataSource.oshis.first())
         assertEquals(listOf(live), eventDataSource.events.first())
     }
 
     @Test
     fun `推しを消すと結び付いた予定も消える`() = testScope.runTest {
-        saveOshi(luminaId, "pink")
-        saveOshi(minatoId, "blue")
-        saveEvent(event("LUMINA LIVE", luminaId))
-        val minatoLive = saveEvent(event("ミナト LIVE", minatoId))
-        val unlinked = saveEvent(event("推しなし", null))
+        oshiDataSource.upsertOshi(lumina)
+        oshiDataSource.upsertOshi(minato)
+        val luminaLive = event("LUMINA LIVE", lumina.id, registeredSecond = 1)
+        val minatoLive = event("ミナト LIVE", minato.id, registeredSecond = 2)
+        val unlinked = event("推しなし", null, registeredSecond = 3)
+        listOf(luminaLive, minatoLive, unlinked).forEach { eventDataSource.upsertEvent(it) }
 
-        oshiDataSource.deleteOshi(luminaId)
+        oshiDataSource.deleteOshi(lumina.id)
 
-        assertEquals(listOf(minatoId), oshiDataSource.oshis.first().map { it.id })
+        assertEquals(listOf(minato), oshiDataSource.oshis.first())
         assertEquals(listOf(minatoLive, unlinked), eventDataSource.events.first())
     }
 
     @Test
     fun `結び付く推しが無い予定の保存はIOException`() = testScope.runTest {
-        val failure = runCatching { saveEvent(event("A", UUID.randomUUID())) }.exceptionOrNull()
+        val failure = runCatching { eventDataSource.upsertEvent(event("A", UUID.randomUUID(), registeredSecond = 1)) }.exceptionOrNull()
 
         assertTrue(failure is IOException)
         assertEquals(emptyList<EventEntity>(), eventDataSource.events.first())

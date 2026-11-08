@@ -19,7 +19,7 @@ constructor(
         localDataSource.events.map { entities -> entities.map { it.toModel() } }
 
     override suspend fun save(event: OshiEvent) {
-        localDataSource.upsertEvent(event.id) { sortOrder -> event.toEntity(sortOrder) }
+        localDataSource.upsertEvent(event.toEntity())
     }
 
     override suspend fun delete(id: UUID) {

@@ -88,7 +88,7 @@ class WidgetConfigureViewModelTest {
         }
     }
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK)
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, createdAt = Instant.EPOCH)
 
     private fun event(
         title: String,

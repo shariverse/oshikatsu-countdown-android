@@ -29,12 +29,13 @@ internal fun OshiEntity.toModel(): Oshi = Oshi(
     name = name,
     color = OshiColor.entries.first { it.storageKey == color },
     photoPath = photoPath,
+    createdAt = createdAt,
 )
 
-internal fun Oshi.toEntity(sortOrder: Long): OshiEntity = OshiEntity(
+internal fun Oshi.toEntity(): OshiEntity = OshiEntity(
     id = id,
     name = name,
     color = color.storageKey,
     photoPath = photoPath,
-    sortOrder = sortOrder,
+    createdAt = createdAt,
 )

@@ -30,6 +30,9 @@ class EventRepositoryImplTest {
         storages.database.close()
     }
 
+    /** 登録した順に並ぶよう、作るたびに 1 ミリ秒ずつ後の時刻にする。 */
+    private var nextCreatedAt = Instant.ofEpochMilli(1_790_000_000_000)
+
     private fun event(
         title: String,
         pinned: Boolean = false,
@@ -42,7 +45,7 @@ class EventRepositoryImplTest {
         startTime = LocalTime.of(17, 0),
         venue = "東京ドーム",
         pinned = pinned,
-        createdAt = Instant.ofEpochMilli(1_790_000_000_000),
+        createdAt = nextCreatedAt.also { nextCreatedAt = it.plusMillis(1) },
     )
 
     @Test
@@ -90,7 +93,7 @@ class EventRepositoryImplTest {
     @Test
     fun `削除と推しごとの削除`() = testScope.runTest {
         val oshiId = UUID.randomUUID()
-        storages.oshiDataSource.upsertOshi(oshiId) { sortOrder -> OshiEntity(oshiId, "LUMINA", "pink", null, sortOrder) }
+        storages.oshiDataSource.upsertOshi(OshiEntity(oshiId, "LUMINA", "pink", null, Instant.EPOCH))
         val a = event("A", oshiId = oshiId)
         val b = event("B", oshiId = oshiId)
         val c = event("C")

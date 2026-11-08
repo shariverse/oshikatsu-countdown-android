@@ -14,8 +14,8 @@ import java.util.UUID
 class DeleteOshiUseCaseTest {
     @Test
     fun `推しと結び付いた予定と写真を消す`() = runTest {
-        val target = Oshi(name = "LUMINA", color = OshiColor.PINK, photoPath = "/photos/lumina.jpg")
-        val other = Oshi(name = "ミナト", color = OshiColor.BLUE)
+        val target = Oshi(name = "LUMINA", color = OshiColor.PINK, photoPath = "/photos/lumina.jpg", createdAt = Instant.EPOCH)
+        val other = Oshi(name = "ミナト", color = OshiColor.BLUE, createdAt = Instant.EPOCH)
         val targetEvent = OshiEvent(
             oshiId = target.id,
             type = EventType.LIVE,

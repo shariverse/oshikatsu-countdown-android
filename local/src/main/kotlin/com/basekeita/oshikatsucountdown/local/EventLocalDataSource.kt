@@ -17,15 +17,12 @@ constructor(
     val events: Flow<List<EventEntity>> = eventDao.getEventEntities().emptyOnDatabaseError()
 
     /**
-     * 同じ [id] があれば置き換え、無ければ末尾に足す。行は [createEntity] に登録した順を渡して作る。
-     * ピン留めした予定なら、ほかの予定のピン留めを外す。結び付く推しが無い予定は保存できない（[IOException]）。
+     * 同じ id があれば書き換え、無ければ足す。ピン留めした予定なら、ほかの予定のピン留めを外す。
+     * 結び付く推しが無い予定は保存できない（[IOException]）。
      */
     @Throws(IOException::class)
-    suspend fun upsertEvent(
-        id: UUID,
-        createEntity: (sortOrder: Long) -> EventEntity,
-    ) {
-        writeDatabase { eventDao.upsertEvent(id, createEntity) }
+    suspend fun upsertEvent(entity: EventEntity) {
+        writeDatabase { eventDao.upsertEvent(entity) }
     }
 
     @Throws(IOException::class)
