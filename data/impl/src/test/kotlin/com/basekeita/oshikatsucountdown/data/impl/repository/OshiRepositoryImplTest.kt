@@ -1,30 +1,32 @@
 package com.basekeita.oshikatsucountdown.data.impl.repository
 
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.basekeita.oshikatsucountdown.data.definition.model.Oshi
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiColor
-import com.basekeita.oshikatsucountdown.local.OshikatsuLocalDataSource
+import com.basekeita.oshikatsucountdown.local.database.model.OshiEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class OshiRepositoryImplTest {
-    @get:Rule
-    val temporaryFolder = TemporaryFolder()
-
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val dataStore by lazy { testDataStore(temporaryFolder.root, testScope.backgroundScope) }
-    private val repository by lazy { OshiRepositoryImpl(OshikatsuLocalDataSource(dataStore), testDispatcher) }
+    private val storages = TestStorages()
+    private val repository by lazy { OshiRepositoryImpl(storages.oshiDataSource, testDispatcher) }
+
+    @After
+    fun closeDatabase() {
+        storages.database.close()
+    }
 
     @Test
     fun `登録した順に戻り同じidは置き換え削除できる`() = testScope.runTest {
@@ -43,10 +45,9 @@ class OshiRepositoryImplTest {
     @Test
     fun `知らない色は既定の色で読み名前が空の推しは読み飛ばす`() = testScope.runTest {
         val id = UUID.randomUUID()
-        dataStore.edit {
-            it[stringPreferencesKey("oshis")] =
-                """[{"id":"$id","name":"ひより","color":"gold"},{"id":"${UUID.randomUUID()}","name":" ","color":"red"}]"""
-        }
+        val blankId = UUID.randomUUID()
+        storages.oshiDataSource.upsertOshi(id) { sortOrder -> OshiEntity(id, "ひより", "gold", null, sortOrder) }
+        storages.oshiDataSource.upsertOshi(blankId) { sortOrder -> OshiEntity(blankId, " ", "red", null, sortOrder) }
 
         assertEquals(listOf(Oshi(id = id, name = "ひより", color = OshiColor.DEFAULT)), repository.oshis.first())
     }

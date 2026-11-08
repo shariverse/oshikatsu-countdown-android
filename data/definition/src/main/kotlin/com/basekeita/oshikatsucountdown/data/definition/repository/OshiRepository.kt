@@ -12,6 +12,6 @@ interface OshiRepository {
     /** 同じ id があれば置き換え、無ければ末尾に足す。 */
     suspend fun save(oshi: Oshi)
 
-    /** 削除する。該当が無いときは何もしない。 */
+    /** 削除する。結び付いた予定も同じ書き込みで消す。該当が無いときは何もしない。 */
     suspend fun delete(id: UUID)
 }

@@ -3,9 +3,9 @@ package com.basekeita.oshikatsucountdown.data.impl.repository
 import com.basekeita.oshikatsucountdown.data.definition.model.Oshi
 import com.basekeita.oshikatsucountdown.data.definition.repository.OshiRepository
 import com.basekeita.oshikatsucountdown.data.impl.DefaultDispatcher
-import com.basekeita.oshikatsucountdown.data.impl.toOshis
-import com.basekeita.oshikatsucountdown.data.impl.toStored
-import com.basekeita.oshikatsucountdown.local.OshikatsuLocalDataSource
+import com.basekeita.oshikatsucountdown.data.impl.mapping.toEntity
+import com.basekeita.oshikatsucountdown.data.impl.mapping.toModelOrNull
+import com.basekeita.oshikatsucountdown.local.OshiLocalDataSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -16,36 +16,20 @@ import javax.inject.Inject
 internal class OshiRepositoryImpl
 @Inject
 constructor(
-    private val localDataSource: OshikatsuLocalDataSource,
+    private val localDataSource: OshiLocalDataSource,
     @param:DefaultDispatcher defaultDispatcher: CoroutineDispatcher,
 ) : OshiRepository {
     override val oshis: Flow<List<Oshi>> =
         localDataSource.oshis
-            .map { stored -> stored?.toOshis().orEmpty() }
-            // 全件の JSON のデコードと整形を、購読する ViewModel の Main で走らせない
+            .map { entities -> entities.mapNotNull { it.toModelOrNull() } }
+            // 全件の整形を、購読する ViewModel の Main で走らせない
             .flowOn(defaultDispatcher)
 
     override suspend fun save(oshi: Oshi) {
-        localDataSource.updateOshis { stored ->
-            val current = stored.toOshis()
-            val updated = if (current.any { it.id == oshi.id }) {
-                current.map { existing ->
-                    if (existing.id == oshi.id) {
-                        oshi
-                    } else {
-                        existing
-                    }
-                }
-            } else {
-                current + oshi
-            }
-            updated.map { it.toStored() }
-        }
+        localDataSource.upsertOshi(oshi.id) { sortOrder -> oshi.toEntity(sortOrder) }
     }
 
     override suspend fun delete(id: UUID) {
-        localDataSource.updateOshis { stored ->
-            stored.toOshis().filter { it.id != id }.map { it.toStored() }
-        }
+        localDataSource.deleteOshi(id)
     }
 }

@@ -1,10 +1,13 @@
-package com.basekeita.oshikatsucountdown.data.impl.repository
+package com.basekeita.oshikatsucountdown.local
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.okio.OkioStorage
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesSerializer
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import com.basekeita.oshikatsucountdown.local.database.OshikatsuDatabase
 import kotlinx.coroutines.CoroutineScope
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
@@ -25,3 +28,8 @@ internal fun testDataStore(
     migrations = emptyList(),
     scope = scope,
 )
+
+/** メモリの上のデータベース。Robolectric の上で作る。 */
+internal fun testDatabase(): OshikatsuDatabase = Room
+    .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), OshikatsuDatabase::class.java)
+    .build()
