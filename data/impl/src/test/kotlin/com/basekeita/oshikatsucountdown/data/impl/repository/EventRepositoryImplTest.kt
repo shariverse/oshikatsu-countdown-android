@@ -21,10 +21,9 @@ import java.util.UUID
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class EventRepositoryImplTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private val testScope = TestScope(UnconfinedTestDispatcher())
     private val storages = TestStorages()
-    private val repository by lazy { EventRepositoryImpl(storages.eventDataSource, testDispatcher) }
+    private val repository by lazy { EventRepositoryImpl(storages.eventDataSource) }
 
     @After
     fun closeDatabase() {

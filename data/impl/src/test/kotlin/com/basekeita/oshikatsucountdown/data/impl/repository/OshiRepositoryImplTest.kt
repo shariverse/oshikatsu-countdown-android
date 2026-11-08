@@ -16,10 +16,9 @@ import org.robolectric.RobolectricTestRunner
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class OshiRepositoryImplTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private val testScope = TestScope(UnconfinedTestDispatcher())
     private val storages = TestStorages()
-    private val repository by lazy { OshiRepositoryImpl(storages.oshiDataSource, testDispatcher) }
+    private val repository by lazy { OshiRepositoryImpl(storages.oshiDataSource) }
 
     @After
     fun closeDatabase() {
