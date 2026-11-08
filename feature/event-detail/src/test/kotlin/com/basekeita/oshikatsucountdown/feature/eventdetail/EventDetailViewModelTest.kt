@@ -68,8 +68,6 @@ class EventDetailViewModelTest {
             events.value = events.value.filter { it.id != id }
         }
 
-        override suspend fun deleteByOshi(oshiId: UUID) = Unit
-
         override suspend fun setPinned(
             id: UUID,
             pinned: Boolean,

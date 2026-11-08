@@ -15,9 +15,6 @@ interface EventRepository {
     /** 削除する。該当が無いときは何もしない。 */
     suspend fun delete(id: UUID)
 
-    /** 推しに結び付いた予定をまとめて削除する。 */
-    suspend fun deleteByOshi(oshiId: UUID)
-
     /** ピン留めを切り替える。ピン留めするときは、ほかの予定のピン留めを外す。 */
     suspend fun setPinned(
         id: UUID,

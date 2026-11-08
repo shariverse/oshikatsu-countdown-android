@@ -30,11 +30,6 @@ constructor(
         writeDatabase { eventDao.deleteEvent(id) }
     }
 
-    @Throws(IOException::class)
-    suspend fun deleteEventsByOshi(oshiId: UUID) {
-        writeDatabase { eventDao.deleteEventsByOshi(oshiId) }
-    }
-
     /** ピン留めするときは、ほかの予定のピン留めを外す。該当が無いときは何もしない。 */
     @Throws(IOException::class)
     suspend fun setPinned(

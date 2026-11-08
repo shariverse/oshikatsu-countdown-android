@@ -33,9 +33,6 @@ abstract class EventDao {
     @Query("DELETE FROM events WHERE id = :id")
     abstract suspend fun deleteEvent(id: UUID)
 
-    @Query("DELETE FROM events WHERE oshiId = :oshiId")
-    abstract suspend fun deleteEventsByOshi(oshiId: UUID)
-
     @Upsert
     protected abstract suspend fun upsertEventEntity(entity: EventEntity)
 }

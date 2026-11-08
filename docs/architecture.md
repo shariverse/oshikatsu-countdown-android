@@ -126,7 +126,7 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
   - 推し・予定は登録した時刻（`createdAt`）を持つ。一覧の並び（登録した順）に使い、編集しても変えない
 - `repository/`（interface）
   - `OshiRepository`: `oshis`、`save`（同じ id は置き換え）、`delete`（結び付いた予定も同じ書き込みで消す）
-  - `EventRepository`: `events`、`save`、`delete`、`deleteByOshi`、`setPinned`（ピン留めは 1 件だけ）
+  - `EventRepository`: `events`、`save`、`delete`、`setPinned`（ピン留めは 1 件だけ）
   - `PhotoRepository`: `import(sourceUri)`（取り込んだファイルの絶対パス）、`delete(path)`
   - `UserSettingsRepository`: `settings`、`setShowPastEvents`、`setOnboardingCompleted`
 
@@ -139,7 +139,7 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 - `oshi/`
   - `SaveOshiUseCase`: 写真を取り込んでから保存し、使わなくなった写真を消す（`PhotoChange` = Keep / Remove / Replace）。
     保存に失敗したら取り込んだ写真を消して `IOException` を投げる
-  - `DeleteOshiUseCase`: 結び付いた予定、推し、写真の順に消す
+  - `DeleteOshiUseCase`: 推し（結び付いた予定も同じ書き込みで消える）、写真の順に消す
 - 時刻は引数で受ける（`today: LocalDate`、`now: Instant` と `zone: ZoneId`）。「今」を読むのは ViewModel
 
 ### local

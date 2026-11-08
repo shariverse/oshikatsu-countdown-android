@@ -26,10 +26,6 @@ constructor(
         localDataSource.deleteEvent(id)
     }
 
-    override suspend fun deleteByOshi(oshiId: UUID) {
-        localDataSource.deleteEventsByOshi(oshiId)
-    }
-
     override suspend fun setPinned(
         id: UUID,
         pinned: Boolean,

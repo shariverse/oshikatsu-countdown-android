@@ -36,8 +36,8 @@ class OshiEditorViewModelTest {
         oshis: List<Oshi> = emptyList(),
         events: List<OshiEvent> = emptyList(),
     ) {
-        val oshiRepository = FakeOshiRepository(oshis)
         val eventRepository = FakeEventRepository(events)
+        val oshiRepository = FakeOshiRepository(oshis, linkedEvents = eventRepository)
         val photoRepository = RecordingPhotoRepository()
 
         fun createViewModel(
@@ -49,7 +49,7 @@ class OshiEditorViewModelTest {
             oshiRepository = oshiRepository,
             eventRepository = eventRepository,
             saveOshi = SaveOshiUseCase(oshiRepository, photoRepository),
-            deleteOshi = DeleteOshiUseCase(oshiRepository, eventRepository, photoRepository),
+            deleteOshi = DeleteOshiUseCase(oshiRepository, photoRepository),
             clock = Clock.fixed(Instant.parse("2026-11-08T10:00:00Z"), ZoneOffset.UTC),
         )
     }

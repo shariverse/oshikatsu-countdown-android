@@ -9,9 +9,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.IOException
 import java.util.UUID
 
-/** メモリに持つ `OshiRepository`。`failsToWrite` を立てると保存・削除で `IOException` を投げる。 */
+/**
+ * メモリに持つ `OshiRepository`。`failsToWrite` を立てると保存・削除で `IOException` を投げる。
+ * [linkedEvents] を渡すと、推しを消したときに結び付いた予定も消す（データベースの外部キーと同じ）。
+ */
 internal class FakeOshiRepository(
     initial: List<Oshi> = emptyList(),
+    private val linkedEvents: FakeEventRepository? = null,
 ) : OshiRepository {
     override val oshis = MutableStateFlow(initial)
     var failsToWrite = false
@@ -37,6 +41,7 @@ internal class FakeOshiRepository(
         if (failsToWrite) throw IOException("disk full")
 
         oshis.value = oshis.value.filter { it.id != id }
+        linkedEvents?.let { events -> events.events.value = events.events.value.filter { it.oshiId != id } }
     }
 }
 
@@ -52,10 +57,6 @@ internal class FakeEventRepository(
 
     override suspend fun delete(id: UUID) {
         events.value = events.value.filter { it.id != id }
-    }
-
-    override suspend fun deleteByOshi(oshiId: UUID) {
-        events.value = events.value.filter { it.oshiId != oshiId }
     }
 
     override suspend fun setPinned(

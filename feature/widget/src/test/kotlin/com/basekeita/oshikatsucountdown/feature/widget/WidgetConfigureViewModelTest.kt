@@ -47,8 +47,6 @@ class WidgetConfigureViewModelTest {
 
         override suspend fun delete(id: UUID) = Unit
 
-        override suspend fun deleteByOshi(oshiId: UUID) = Unit
-
         override suspend fun setPinned(
             id: UUID,
             pinned: Boolean,

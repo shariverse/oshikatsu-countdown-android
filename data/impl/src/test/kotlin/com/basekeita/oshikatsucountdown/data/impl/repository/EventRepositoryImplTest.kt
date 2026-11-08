@@ -91,7 +91,7 @@ class EventRepositoryImplTest {
     }
 
     @Test
-    fun `削除と推しごとの削除`() = testScope.runTest {
+    fun `削除できる`() = testScope.runTest {
         val oshiId = UUID.randomUUID()
         storages.oshiDataSource.upsertOshi(OshiEntity(oshiId, "LUMINA", "pink", null, Instant.EPOCH))
         val a = event("A", oshiId = oshiId)
@@ -101,8 +101,5 @@ class EventRepositoryImplTest {
 
         repository.delete(a.id)
         assertEquals(listOf("B", "C"), repository.events.first().map { it.title })
-
-        repository.deleteByOshi(oshiId)
-        assertEquals(listOf("C"), repository.events.first().map { it.title })
     }
 }

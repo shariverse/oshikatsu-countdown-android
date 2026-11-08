@@ -24,11 +24,11 @@ class DeleteOshiUseCaseTest {
             createdAt = Instant.EPOCH,
         )
         val otherEvent = targetEvent.copy(id = UUID.randomUUID(), oshiId = other.id, title = "写真集")
-        val oshiRepository = FakeOshiRepository(listOf(target, other))
         val eventRepository = FakeEventRepository(listOf(targetEvent, otherEvent))
+        val oshiRepository = FakeOshiRepository(listOf(target, other), linkedEvents = eventRepository)
         val photoRepository = RecordingPhotoRepository()
 
-        DeleteOshiUseCase(oshiRepository, eventRepository, photoRepository)(target)
+        DeleteOshiUseCase(oshiRepository, photoRepository)(target)
 
         assertEquals(listOf(other), oshiRepository.oshis.value)
         assertEquals(listOf(otherEvent), eventRepository.events.value)
