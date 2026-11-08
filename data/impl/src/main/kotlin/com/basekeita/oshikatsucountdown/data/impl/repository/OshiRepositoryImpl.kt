@@ -4,7 +4,7 @@ import com.basekeita.oshikatsucountdown.data.definition.model.Oshi
 import com.basekeita.oshikatsucountdown.data.definition.repository.OshiRepository
 import com.basekeita.oshikatsucountdown.data.impl.DefaultDispatcher
 import com.basekeita.oshikatsucountdown.data.impl.mapping.toEntity
-import com.basekeita.oshikatsucountdown.data.impl.mapping.toModelOrNull
+import com.basekeita.oshikatsucountdown.data.impl.mapping.toModel
 import com.basekeita.oshikatsucountdown.local.OshiLocalDataSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +21,7 @@ constructor(
 ) : OshiRepository {
     override val oshis: Flow<List<Oshi>> =
         localDataSource.oshis
-            .map { entities -> entities.mapNotNull { it.toModelOrNull() } }
+            .map { entities -> entities.map { it.toModel() } }
             // 全件の整形を、購読する ViewModel の Main で走らせない
             .flowOn(defaultDispatcher)
 

@@ -2,7 +2,6 @@ package com.basekeita.oshikatsucountdown.data.impl.repository
 
 import com.basekeita.oshikatsucountdown.data.definition.model.EventType
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiEvent
-import com.basekeita.oshikatsucountdown.data.impl.mapping.toEntity
 import com.basekeita.oshikatsucountdown.local.database.model.OshiEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -103,18 +102,5 @@ class EventRepositoryImplTest {
 
         repository.deleteByOshi(oshiId)
         assertEquals(listOf("C"), repository.events.first().map { it.title })
-    }
-
-    @Test
-    fun `知らない種類はその他で読みタイトルが空の予定は読み飛ばす`() = testScope.runTest {
-        val readable = event("読める")
-        val blank = event("  ")
-        storages.eventDataSource.upsertEvent(readable.id) { sortOrder -> readable.toEntity(sortOrder).copy(type = "unknown") }
-        storages.eventDataSource.upsertEvent(blank.id) { sortOrder -> blank.toEntity(sortOrder) }
-
-        val loaded = repository.events.first().single()
-
-        assertEquals(readable.id, loaded.id)
-        assertEquals(EventType.OTHER, loaded.type)
     }
 }

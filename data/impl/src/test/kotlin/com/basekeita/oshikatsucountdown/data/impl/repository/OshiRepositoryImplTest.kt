@@ -2,7 +2,6 @@ package com.basekeita.oshikatsucountdown.data.impl.repository
 
 import com.basekeita.oshikatsucountdown.data.definition.model.Oshi
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiColor
-import com.basekeita.oshikatsucountdown.local.database.model.OshiEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -13,7 +12,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -40,15 +38,5 @@ class OshiRepositoryImplTest {
 
         repository.delete(lumina.id)
         assertEquals(listOf(minato), repository.oshis.first())
-    }
-
-    @Test
-    fun `知らない色は既定の色で読み名前が空の推しは読み飛ばす`() = testScope.runTest {
-        val id = UUID.randomUUID()
-        val blankId = UUID.randomUUID()
-        storages.oshiDataSource.upsertOshi(id) { sortOrder -> OshiEntity(id, "ひより", "gold", null, sortOrder) }
-        storages.oshiDataSource.upsertOshi(blankId) { sortOrder -> OshiEntity(blankId, " ", "red", null, sortOrder) }
-
-        assertEquals(listOf(Oshi(id = id, name = "ひより", color = OshiColor.DEFAULT)), repository.oshis.first())
     }
 }

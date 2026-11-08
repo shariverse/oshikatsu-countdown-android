@@ -17,27 +17,18 @@ internal val EventType.storageKey: String
         EventType.OTHER -> "other"
     }
 
-/** 知らない種類は「その他」にする。 */
-private fun eventTypeOf(storageKey: String): EventType = EventType.entries.firstOrNull { it.storageKey == storageKey } ?: EventType.OTHER
-
-/** タイトルが空になる予定は読み飛ばす。 */
-internal fun EventEntity.toModelOrNull(): OshiEvent? {
-    val normalizedTitle = OshiEvent.normalizeTitle(title)
-    if (normalizedTitle.isEmpty()) return null
-
-    return OshiEvent(
-        id = id,
-        oshiId = oshiId,
-        type = eventTypeOf(type),
-        title = normalizedTitle,
-        date = date,
-        startTime = startTime,
-        venue = OshiEvent.normalizeVenue(venue),
-        repeatsYearly = repeatsYearly,
-        pinned = pinned,
-        createdAt = createdAt,
-    )
-}
+internal fun EventEntity.toModel(): OshiEvent = OshiEvent(
+    id = id,
+    oshiId = oshiId,
+    type = EventType.entries.first { it.storageKey == type },
+    title = title,
+    date = date,
+    startTime = startTime,
+    venue = venue,
+    repeatsYearly = repeatsYearly,
+    pinned = pinned,
+    createdAt = createdAt,
+)
 
 internal fun OshiEvent.toEntity(sortOrder: Long): EventEntity = EventEntity(
     id = id,

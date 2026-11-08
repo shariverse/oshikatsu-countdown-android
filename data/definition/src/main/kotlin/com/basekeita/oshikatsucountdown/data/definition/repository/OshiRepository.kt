@@ -6,7 +6,7 @@ import java.util.UUID
 
 /** 推しの一覧。並びは登録した順。 */
 interface OshiRepository {
-    /** 保存済みの推し。無い・読めないときは空。 */
+    /** 保存済みの推し。無いとき、データベースを読めないときは空。 */
     val oshis: Flow<List<Oshi>>
 
     /** 同じ id があれば置き換え、無ければ末尾に足す。 */

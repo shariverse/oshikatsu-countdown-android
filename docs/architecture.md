@@ -162,10 +162,10 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 ### data:impl
 
 - Repository の実装と `DataModule`（`@Binds` と、`@DefaultDispatcher` の `Dispatchers.Default`）
-- Entity とドメインモデルの対応は `mapping/` にモデルごとに置く（`OshiMapping` / `EventMapping` の `toModelOrNull()` / `toEntity(sortOrder)`）
+- Entity とドメインモデルの対応は `mapping/` にモデルごとに置く（`OshiMapping` / `EventMapping` の `toModel()` / `toEntity(sortOrder)`）。項目を詰め替えるだけ
   - 推し色・種類は、enum の名前ではなく data:impl の対応表（`storageKey`）で決めたキー（`pink`・`bday` など）で持つ。保存の形はデータ層が決め、ドメインの enum は保存のことを知らない。
-    enum の名前を変えても保存の値は変わらない。キーを変えるときはデータベースの版を上げて移す。知らないキーは既定（推し色はピンク、種類はその他）に戻す
-- 読み込んだデータを整える: 名前・タイトルを正規化し、空になるものは読み飛ばす
+    enum の名前を変えても保存の値は変わらない。キーを変えるときはデータベースの版を上げて移す。対応表に無いキーは移行の誤りなので、既定に戻さず例外のままにする
+  - 読むときに確かめ直さない。名前・タイトルの正規化と空のときの扱いは保存する前に済ませ、データベースにはこのアプリが保存した値しか入らないため
 
 ### ui（共通 UI）
 

@@ -6,7 +6,7 @@ import java.util.UUID
 
 /** 予定の一覧。並びは登録した順（表示の順は UseCase が決める）。 */
 interface EventRepository {
-    /** 保存済みの予定。無い・読めないときは空。 */
+    /** 保存済みの予定。無いとき、データベースを読めないときは空。 */
     val events: Flow<List<OshiEvent>>
 
     /** 同じ id があれば置き換え、無ければ末尾に足す。ピン留めした予定を保存したときは、ほかの予定のピン留めを外す。 */

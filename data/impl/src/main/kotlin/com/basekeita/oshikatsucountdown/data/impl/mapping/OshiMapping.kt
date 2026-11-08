@@ -24,16 +24,12 @@ internal val OshiColor.storageKey: String
         OshiColor.BLACK -> "black"
     }
 
-/** 知らない色は既定の色に戻す。 */
-private fun oshiColorOf(storageKey: String): OshiColor = OshiColor.entries.firstOrNull { it.storageKey == storageKey } ?: OshiColor.DEFAULT
-
-/** 名前が空になる推しは読み飛ばす。 */
-internal fun OshiEntity.toModelOrNull(): Oshi? {
-    val normalizedName = Oshi.normalizeName(name)
-    if (normalizedName.isEmpty()) return null
-
-    return Oshi(id = id, name = normalizedName, color = oshiColorOf(color), photoPath = photoPath)
-}
+internal fun OshiEntity.toModel(): Oshi = Oshi(
+    id = id,
+    name = name,
+    color = OshiColor.entries.first { it.storageKey == color },
+    photoPath = photoPath,
+)
 
 internal fun Oshi.toEntity(sortOrder: Long): OshiEntity = OshiEntity(
     id = id,

@@ -4,7 +4,7 @@ import com.basekeita.oshikatsucountdown.data.definition.model.OshiEvent
 import com.basekeita.oshikatsucountdown.data.definition.repository.EventRepository
 import com.basekeita.oshikatsucountdown.data.impl.DefaultDispatcher
 import com.basekeita.oshikatsucountdown.data.impl.mapping.toEntity
-import com.basekeita.oshikatsucountdown.data.impl.mapping.toModelOrNull
+import com.basekeita.oshikatsucountdown.data.impl.mapping.toModel
 import com.basekeita.oshikatsucountdown.local.EventLocalDataSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +21,7 @@ constructor(
 ) : EventRepository {
     override val events: Flow<List<OshiEvent>> =
         localDataSource.events
-            .map { entities -> entities.mapNotNull { it.toModelOrNull() } }
+            .map { entities -> entities.map { it.toModel() } }
             // 全件の整形を、購読する ViewModel の Main で走らせない
             .flowOn(defaultDispatcher)
 
