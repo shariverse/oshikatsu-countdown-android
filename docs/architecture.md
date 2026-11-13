@@ -123,9 +123,10 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 - `model/`: `Oshi`、`OshiColor`、`OshiEvent`、`EventType`、`UserSettings`
   - 名前・タイトル・会場の正規化と上限はモデルに持たせる（`Oshi.normalizeName` / `MAX_NAME_LENGTH`、`OshiEvent.normalizeTitle` / `normalizeVenue`）
   - 文字数は見た目の 1 文字（書記素クラスタ）で数える（`takeCharacters`）
+  - 推し・予定は登録した時刻（`createdAt`）を持つ。一覧の並び（登録した順）に使い、編集しても変えない
 - `repository/`（interface）
-  - `OshiRepository`: `oshis`、`save`（同じ id は置き換え）、`delete`
-  - `EventRepository`: `events`、`save`、`delete`、`deleteByOshi`、`setPinned`（ピン留めは 1 件だけ）
+  - `OshiRepository`: `oshis`、`save`（同じ id は置き換え）、`delete`（結び付いた予定も同じ書き込みで消す）
+  - `EventRepository`: `events`、`save`、`delete`、`setPinned`（ピン留めは 1 件だけ）
   - `PhotoRepository`: `import(sourceUri)`（取り込んだファイルの絶対パス）、`delete(path)`
   - `UserSettingsRepository`: `settings`、`setShowPastEvents`、`setOnboardingCompleted`
 
@@ -138,7 +139,7 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 - `oshi/`
   - `SaveOshiUseCase`: 写真を取り込んでから保存し、使わなくなった写真を消す（`PhotoChange` = Keep / Remove / Replace）。
     保存に失敗したら取り込んだ写真を消して `IOException` を投げる
-  - `DeleteOshiUseCase`: 結び付いた予定、推し、写真の順に消す
+  - `DeleteOshiUseCase`: 推し（結び付いた予定も同じ書き込みで消える）、写真の順に消す
 - 時刻は引数で受ける（`today: LocalDate`、`now: Instant` と `zone: ZoneId`）。「今」を読むのは ViewModel
 
 ### local
@@ -146,16 +147,25 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
 - 推し・予定は Room に保存する。推しと予定はそれぞれのテーブルにし、予定は推しの id（`oshiId`）で推しに結び付ける。
   推し・予定は関係を持つ一覧で、1 件ずつの保存・削除と、推しを消したら結び付いた予定も消す整合が要るため
   （DataStore は小さなデータ向けで、部分的な更新と参照の整合を持たない。[DataStore](https://developer.android.com/topic/libraries/architecture/datastore)）
-- 設定（`showPastEvents` / `onboardingCompleted`）は DataStore（Preferences、`oshikatsu_prefs`）の Boolean のキーに置く
+  - `database/`: `OshikatsuDatabase`（`oshikatsu.db`。テーブルの形は `local/schemas/` に書き出す）、`OshiDao` / `EventDao`。`database/model/` に `OshiEntity` / `EventEntity`、`database/util/` に列の型の `TypeConverter`（UUID・`LocalDate`・`LocalTime`・`Instant`）
+  - 予定の `oshiId` は推しへの外部キー（`ON DELETE CASCADE`）。推しを消すと結び付いた予定も同じ書き込みで消える。結び付く推しが無い予定は保存できない
+  - 一覧は登録した時刻（`createdAt`）の順に読む。保存は `@Upsert`（同じ id があれば行を書き換える）。
+    行を消して入れ直す `REPLACE` は、推しなら結び付いた予定まで消すため使わない
+  - ピン留めは 1 件だけ。ピン留めした予定の保存と、ほかの予定のピン留めを外すのは 1 つのトランザクションで行う
+  - `OshiLocalDataSource` / `EventLocalDataSource` は DAO を受け取り、読み込みの `Flow` と書き込みを持つ。行は Entity で受け渡す。
+    データベースの失敗（`SQLException`）は、読み込みなら空を流し、書き込みなら `IOException` にして投げる（ViewModel が受ける書き込みの失敗にそろえる）
+- 設定（`showPastEvents` / `onboardingCompleted`）は DataStore（Preferences、`oshikatsu_prefs`）の Boolean のキーに置く（`UserSettingsLocalDataSource`）
 - `PhotoLocalDataSource`: Photo Picker の URI を `ImageDecoder` で読み、長辺 1440px 以下の JPEG にして `files/oshi_photos/` に書く。書き出しに失敗したら書きかけのファイルを消して `null`。消すのはその中のファイルだけ
 - 推し・写真・予定は端末の外に出さない。自動バックアップは `allowBackup="false"` で切り、
   それだけでは止まらない機種がある Android 12 以降の端末間の移行も `data_extraction_rules.xml` で全部除く
 
 ### data:impl
 
-- Repository の実装と `DataModule`（`@Binds` と、`@DefaultDispatcher` の `Dispatchers.Default`）
-- 保存値との対応（`StoredDataMapping`）。推し色・種類は enum の名前ではなく書き出した保存値で持つ。知らない値は既定（推し色はピンク、種類はその他）に戻す
-- 読み込んだデータを整える: 名前・タイトルが空になるもの、日付が読めない予定は読み飛ばす。時刻が読めなければ時刻なし。重複した id は先のものだけ残す
+- Repository の実装と `DataModule`（`@Binds`）
+- Entity とドメインモデルの対応は `mapping/` にモデルごとに置く（`OshiMapping` / `EventMapping` の `toModel()` / `toEntity()`）。項目を詰め替えるだけ
+  - 推し色・種類は、enum の名前ではなく data:impl の対応表（`storageKey`）で決めたキー（`pink`・`bday` など）で持つ。保存の形はデータ層が決め、ドメインの enum は保存のことを知らない。
+    enum の名前を変えても保存の値は変わらない。キーを変えるときはデータベースの版を上げて移す。対応表に無いキーは移行の誤りなので、既定に戻さず例外のままにする
+  - 読むときに確かめ直さない。名前・タイトルの正規化と空のときの扱いは保存する前に済ませ、データベースにはこのアプリが保存した値しか入らないため
 
 ### ui（共通 UI）
 
@@ -274,7 +284,8 @@ feature/widget/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/widget/
 
 - Fake の Repository は共通のモジュールに置かず、使うモジュールのテストに書く。同じモジュールの複数のテストで使うものは `FakeRepositories.kt` にまとめる
 - 時刻は固定の `Clock`、または仮想時間とともに進む `Clock`（予定の詳細）を ViewModel に渡す
-- `local` / `data:impl` のテストは一時ファイルの DataStore で確かめる。ファイルを渡す `PreferenceDataStoreFactory.create` は
-  JVM のテストでは `File.renameTo` で書き換え、Windows では 2 回目の書き込みが失敗するため、`OkioStorage(FileSystem.SYSTEM, PreferencesSerializer)` を `create(storage = ...)` に渡す
+- 推し・予定（`local` / `data:impl`）はメモリの上の Room（`Room.inMemoryDatabaseBuilder`）で確かめる。Room は Context が要るため、Robolectric の上で動かす
+- 設定（`local`）は一時ファイルの DataStore で確かめる。ファイルを渡す `PreferenceDataStoreFactory.create` は JVM のテストでは `File.renameTo` で書き換え、Windows では 2 回目の書き込みが失敗するため、
+  `OkioStorage(FileSystem.SYSTEM, PreferencesSerializer)` を `create(storage = ...)` に渡す
 - 推し色のコントラスト（白い文字・ライトとダークの地）は `ui` の `OshiColorContrastTest` で確かめる
 - ウィジェットは、予定の並びからの変換（`WidgetMappingTest`）と予定を選ぶ画面の ViewModel を JVM で確かめる。Glance の描画はテストしない

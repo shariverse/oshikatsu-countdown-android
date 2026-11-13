@@ -68,8 +68,6 @@ class EventDetailViewModelTest {
             events.value = events.value.filter { it.id != id }
         }
 
-        override suspend fun deleteByOshi(oshiId: UUID) = Unit
-
         override suspend fun setPinned(
             id: UUID,
             pinned: Boolean,
@@ -96,7 +94,7 @@ class EventDetailViewModelTest {
         override suspend fun delete(id: UUID) = Unit
     }
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, photoPath = "/photos/lumina.jpg")
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, photoPath = "/photos/lumina.jpg", createdAt = Instant.EPOCH)
     private val live = OshiEvent(
         oshiId = lumina.id,
         type = EventType.LIVE,

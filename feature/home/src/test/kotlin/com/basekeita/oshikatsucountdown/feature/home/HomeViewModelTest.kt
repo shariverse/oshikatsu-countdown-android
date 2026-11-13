@@ -61,8 +61,6 @@ class HomeViewModelTest {
 
         override suspend fun delete(id: UUID) = Unit
 
-        override suspend fun deleteByOshi(oshiId: UUID) = Unit
-
         override suspend fun setPinned(
             id: UUID,
             pinned: Boolean,
@@ -93,8 +91,8 @@ class HomeViewModelTest {
         override suspend fun setOnboardingCompleted(completed: Boolean) = Unit
     }
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK)
-    private val minato = Oshi(name = "ミナト", color = OshiColor.BLUE, photoPath = "/photos/minato.jpg")
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, createdAt = Instant.EPOCH)
+    private val minato = Oshi(name = "ミナト", color = OshiColor.BLUE, photoPath = "/photos/minato.jpg", createdAt = Instant.EPOCH)
 
     private fun event(
         title: String,
@@ -223,8 +221,6 @@ class HomeViewModelTest {
             override suspend fun save(event: OshiEvent) = Unit
 
             override suspend fun delete(id: UUID) = Unit
-
-            override suspend fun deleteByOshi(oshiId: UUID) = Unit
 
             override suspend fun setPinned(
                 id: UUID,
