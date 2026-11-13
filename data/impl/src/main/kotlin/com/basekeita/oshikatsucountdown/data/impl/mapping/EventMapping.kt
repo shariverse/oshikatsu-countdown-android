@@ -17,10 +17,14 @@ internal val EventType.storageKey: String
         EventType.OTHER -> "other"
     }
 
+/**
+ * 対応表に無いキーは「その他」にする。どのキーがあり得るかは読む版の対応表で決まり、
+ * キーの変更で移行を書き忘れたときや、種類を足した版から前の版に戻したときにも入りうるため。
+ */
 internal fun EventEntity.toModel(): OshiEvent = OshiEvent(
     id = id,
     oshiId = oshiId,
-    type = EventType.entries.first { it.storageKey == type },
+    type = EventType.entries.firstOrNull { it.storageKey == type } ?: EventType.OTHER,
     title = title,
     date = date,
     startTime = startTime,

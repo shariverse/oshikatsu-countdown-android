@@ -24,10 +24,14 @@ internal val OshiColor.storageKey: String
         OshiColor.BLACK -> "black"
     }
 
+/**
+ * 対応表に無いキーは既定の色にする。どのキーがあり得るかは読む版の対応表で決まり、
+ * キーの変更で移行を書き忘れたときや、色を足した版から前の版に戻したときにも入りうるため。
+ */
 internal fun OshiEntity.toModel(): Oshi = Oshi(
     id = id,
     name = name,
-    color = OshiColor.entries.first { it.storageKey == color },
+    color = OshiColor.entries.firstOrNull { it.storageKey == color } ?: OshiColor.DEFAULT,
     photoPath = photoPath,
     createdAt = createdAt,
 )
