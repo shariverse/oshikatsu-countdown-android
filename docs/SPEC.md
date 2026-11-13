@@ -3,6 +3,7 @@
 推し活の予定（推しのライブ・誕生日・発売日など）を登録し、その日まであと何日かを数えるアプリ。
 画面デザインの正はデザインキャンバス「推し活カウントダウン 画面デザイン」の Android の 2 枚（ホーム、ウィジェット・通知）と iOS の主要画面 4 枚。
 部品と操作感は iOS の画面をコピーせず Material 3 の標準に従い、デザインから引き継ぐのは機能・文言・配色だけにする。
+iOS 版は、配色・書体・角の丸み・装飾をデザインキャンバスから独自のテーマ「地雷系・ゴシック」に置き換えた（[5. iOS 版のテーマ](#5-ios-版のテーマ)）。Android 版の配色はデザインキャンバスのまま。
 実装の構成は [`architecture.md`](architecture.md)。
 
 ---
@@ -139,3 +140,68 @@
 | ウィジェットの角 | 決まった丸み | 端末のウィジェットの角の丸み（Android 12 以降。11 では角を丸めない） |
 | 推しカウントの地 | 薄い灰色（`#F3EDF1`） | カードの地（ライトは白）。推し色の文字が 4.5:1 を保てる地にする |
 | 推しカウントの ＋・行 | 32dp の丸、詰めた行 | ＋ は見た目の丸を 32dp のまま、押せる範囲を M3 の 48dp にする。行の高さも 48dp |
+
+## 5. iOS 版のテーマ
+
+iOS 版は [Discussion #80（アプリのテーマを改善する）](https://github.com/shariverse/oshikatsu-countdown-ios/discussions/80) で 5 つのテーマ案から「地雷系・ゴシック」を選び、出荷するアプリとウィジェットの見た目にした（[iOS #115](https://github.com/shariverse/oshikatsu-countdown-ios/pull/115)。develop への取り込みは [iOS #97](https://github.com/shariverse/oshikatsu-countdown-ios/pull/97)）。
+**iOS 独自のテーマ**で、Android 版に入れるかは Android 側で決める。入れるまでは、Android 版は §4 のとおりデザインキャンバスの配色で作る。
+
+- 変わったのは見た目（地の配色・書体・角の丸み・装飾）だけ。機能・文言・規則（§1〜§3）は変わらない
+- 推し色は変えない。12 色の値と役割（先頭のカードの塗り・写真が無いときの模様の色・残り日数の文字・印）はそのまま
+- 値の正は iOS の [`docs/design/themes.md`](https://github.com/shariverse/oshikatsu-countdown-ios/blob/2e2fb4bee9bd93fcb072d2df6acbd659162de504/docs/design/themes.md) と [`Shared/Design/Themes/JiraiGothic.swift`](https://github.com/shariverse/oshikatsu-countdown-ios/blob/2e2fb4bee9bd93fcb072d2df6acbd659162de504/Shared/Design/Themes/JiraiGothic.swift)（iOS の develop の 2e2fb4b）
+
+### 5.1 狙い
+
+黒 × ピンクで、ダークが主役。ライトも薄いピンクの地に黒の文字・黒の縁取りで、世界観が分かるようにする。日本語の本文は装飾的な明朝で、ゴシックの雰囲気を出す。
+
+### 5.2 配色
+
+役割の名前は Android 版の `OshikatsuColorScheme` と同じ（iOS のテーマには `outline` が無い）。
+
+| 役割 | ライト | ダーク |
+|---|---|---|
+| background（画面の地） | `#FFF0F5` | `#120D12` |
+| surface（カード・シート） | `#FFFFFF` | `#1E141C` |
+| surfaceContainer（入力欄の地） | `#FBE4EE` | `#180F16` |
+| surfaceContainerHigh（進み具合のバーの溝・区切り） | `#F0C9DA` | `#3A2533` |
+| onSurface（本文） | `#1A0F16` | `#F6E6EE` |
+| onSurfaceVariant（補助テキスト） | `#5A3A4C` | `#D6B9C8` |
+| outlineVariant（区切り線） | `#E8B9CF` | `#5C3A4E` |
+| brand / onBrand | `#C2185B` / `#FFFFFF` | `#FF7EB3` / `#3A0A20` |
+| brandContainer / onBrandContainer（選択中の印の地と、その上の文字） | `#F8C8DC` / `#1A0F16` | `#6E1E45` / `#FFD9E8` |
+| destructive（削除の文字） | `#B3261E` | `#F2B8B5` |
+| ホームの地の十字・ハート | `#F2B6CF` | `#4A2A3C` |
+| カードの二重の線 / 見出しのハート | `#1A0F16` / `#C2185B` | `#FF7EB3` / `#FF7EB3` |
+
+推し色を地の上の文字に使うときの寄せ方:
+
+- ライト: 画面の地・カードの地では黒に 8%、入力欄の地（surfaceContainer）では黒に 12% 寄せる（地が薄いピンクのため）
+- ダーク: 白に 45% 寄せる（§4 のダークの外観と同じ）
+- 推し色 12 色の文字は、画面の地・カードの地・入力欄の地のどれでも 4.5:1 以上（いちばん小さいのはライトがオレンジ・入力欄の 4.85、ダークがブラック・カードの 5.77）
+
+### 5.3 書体
+
+- 日本語の本文: Kaisei Decol（Regular / Bold。Medium は Regular に寄せ、合成の太字にしない）。ライセンスは SIL Open Font License 1.1（[google/fonts](https://github.com/google/fonts) の `ofl/kaiseidecol`）
+- 数字: Outfit の Heavy（デザインキャンバスでは Bold）
+- iOS 版も日本語のときだけ Kaisei Decol を使い、ほかの言語はシステムの書体にしている
+
+### 5.4 角の丸み
+
+| 部品 | iOS 版のテーマ | デザインキャンバス |
+|---|---|---|
+| ホームの先頭の予定のカード | 16 | 28 |
+| 見出しつきのまとまり（これからの予定など） | 12 | 20 |
+| 予定の詳細のカード（上の 2 つの角） | 20 | 28 |
+| 種類などの小さな札 | 4 | 8 |
+
+単位は iOS の pt。
+
+### 5.5 装飾
+
+- ホームの画面の地: 十字とハートを小さく散らす（不透明度 0.35）。同じ大きさの模様をくり返して敷くので、広い画面でも模様の密度は変わらない。推しの一覧・設定・予定と推しの編集・初回の導線の地は background の単色
+- カードの縁: 二重の線（外側に 1.5pt、その 4pt 内側に 1pt。内側の線は不透明度 0.5）
+- 見出しの前にハートを置く
+- 写真が無いときの写真の場所（§2.4）: 推し色の斜めの縞の代わりに、推し色を黒に 30% 寄せた地に、白い十字とハート（不透明度 0.2）を互い違いに散らす
+- 設定・予定と推しの編集・ライセンスの一覧の行の地も、カードの地（surface）にそろえた
+- 装飾は図形と記号で描き、画像の素材は使わない。読み上げ・押せる範囲・並び順を変えず、カードの中の文字の上には重ねない
+- ホーム画面ウィジェットに効くのは配色と書体だけで、装飾は入れていない
