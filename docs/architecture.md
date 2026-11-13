@@ -264,7 +264,8 @@ feature/widget/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/widget/
   ウィジェットを外すと Glance が状態ごと消す
 - 予定を選ぶ画面は `appWidgetConfigure` の Activity。最初に `RESULT_CANCELED` を返しておき、保存し終えてから `RESULT_OK` で閉じる
 - 描き直すきっかけ
-  - 推し・予定の変更: `WidgetDataSync` が Repository を見て `updateAll`。`OshikatsuApplication` がプロセスの開始時に動かす
+  - 推し・予定の変更: `WidgetDataSync` が Repository を見て `updateAll`。`OshikatsuApplication` がプロセスの開始時に動かす。
+    ViewModel を通らないので、例外は `WidgetDataSync` が `.catch` で受けてログに残す（受けないとプロセスが落ちる）。止まってもウィジェットは前の表示のまま残る
   - 日付の変わり目: 描くたびに次の 0:00 を `AlarmManager.setWindow`（`RTC`、幅 10 分）で予約し、`WidgetRefreshReceiver` が描き直す。
     端末の時刻・タイムゾーンの変更（`TIME_SET` / `TIMEZONE_CHANGED`）も同じ Receiver で受ける。`updatePeriodMillis` は使わない
 - 押したときはランチャーの Intent に `ExternalLaunchExtras` を付けて `MainActivity` を開く（`CLEAR_TOP | SINGLE_TOP` で開いているアプリに渡す）
