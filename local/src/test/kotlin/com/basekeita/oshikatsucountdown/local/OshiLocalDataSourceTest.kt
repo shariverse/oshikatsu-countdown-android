@@ -3,7 +3,10 @@ package com.basekeita.oshikatsucountdown.local
 import com.basekeita.oshikatsucountdown.local.database.model.EventEntity
 import com.basekeita.oshikatsucountdown.local.database.model.OshiEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -18,7 +21,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
-/** 推しと予定の結び付き（推しの保存・削除が予定に与えるもの）と、登録した順の並び。 */
+/** 推しと予定の結び付き（推しの保存・削除が予定に与えるもの。購読している一覧に届くかも含む）と、登録した順の並び。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class OshiLocalDataSourceTest {
@@ -98,6 +101,23 @@ class OshiLocalDataSourceTest {
 
         assertTrue(failure is IOException)
         assertEquals(emptyList<EventEntity>(), eventDataSource.events.first())
+    }
+
+    @Test
+    fun `購読している予定の一覧に推しを消して消えた予定が届く`() = testScope.runTest {
+        oshiDataSource.upsertOshi(lumina)
+        oshiDataSource.upsertOshi(minato)
+        val luminaLive = event("LUMINA LIVE", lumina.id, registeredSecond = 1)
+        val minatoLive = event("ミナト LIVE", minato.id, registeredSecond = 2)
+        listOf(luminaLive, minatoLive).forEach { eventDataSource.upsertEvent(it) }
+        val received = Channel<List<EventEntity>>(Channel.UNLIMITED)
+        // Room は書き込みのあとに同じ一覧を流し直すことがあるので、変わったときだけ受ける
+        backgroundScope.launch { eventDataSource.events.distinctUntilChanged().collect { received.send(it) } }
+        assertEquals(listOf(luminaLive, minatoLive), received.receive())
+
+        oshiDataSource.deleteOshi(lumina.id)
+
+        assertEquals(listOf(minatoLive), received.receive())
     }
 
     @Test
