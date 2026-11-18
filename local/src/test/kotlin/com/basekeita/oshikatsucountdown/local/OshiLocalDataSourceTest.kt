@@ -99,4 +99,18 @@ class OshiLocalDataSourceTest {
         assertTrue(failure is IOException)
         assertEquals(emptyList<EventEntity>(), eventDataSource.events.first())
     }
+
+    @Test
+    fun `登録した時刻が同じ推しは名前の順で予定はidの順`() = testScope.runTest {
+        // 入れた順と逆の並びになるようにして、入れた順のまま返っているのではないことを確かめる
+        val minatoAtSameTime = oshi("ミナト", "blue", registeredSecond = 5)
+        val luminaAtSameTime = oshi("LUMINA", "pink", registeredSecond = 5)
+        listOf(minatoAtSameTime, luminaAtSameTime).forEach { oshiDataSource.upsertOshi(it) }
+        val laterId = event("A", null, registeredSecond = 5).copy(id = UUID.fromString("ffffffff-ffff-4fff-bfff-ffffffffffff"))
+        val earlierId = event("B", null, registeredSecond = 5).copy(id = UUID.fromString("00000000-0000-4000-8000-000000000000"))
+        listOf(laterId, earlierId).forEach { eventDataSource.upsertEvent(it) }
+
+        assertEquals(listOf(luminaAtSameTime, minatoAtSameTime), oshiDataSource.oshis.first())
+        assertEquals(listOf(earlierId, laterId), eventDataSource.events.first())
+    }
 }

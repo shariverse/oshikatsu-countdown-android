@@ -9,8 +9,8 @@ import java.util.UUID
 
 @Dao
 interface OshiDao {
-    /** 登録した順。 */
-    @Query("SELECT * FROM oshis ORDER BY createdAt")
+    /** 登録した順。登録した時刻が同じなら名前、id の順にして、毎回同じ並びにする。 */
+    @Query("SELECT * FROM oshis ORDER BY createdAt, name, id")
     fun getOshiEntities(): Flow<List<OshiEntity>>
 
     /**

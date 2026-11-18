@@ -10,8 +10,8 @@ import java.util.UUID
 
 @Dao
 abstract class EventDao {
-    /** 登録した順。 */
-    @Query("SELECT * FROM events ORDER BY createdAt")
+    /** 登録した順。登録した時刻が同じなら id の順にして、毎回同じ並びにする。 */
+    @Query("SELECT * FROM events ORDER BY createdAt, id")
     abstract fun getEventEntities(): Flow<List<EventEntity>>
 
     /** 同じ id があれば書き換え、無ければ足す。ピン留めした予定なら、ほかの予定のピン留めを外す。 */

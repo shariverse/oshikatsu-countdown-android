@@ -149,7 +149,8 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
   （DataStore は小さなデータ向けで、部分的な更新と参照の整合を持たない。[DataStore](https://developer.android.com/topic/libraries/architecture/datastore)）
   - `database/`: `OshikatsuDatabase`（`oshikatsu.db`。テーブルの形は `local/schemas/` に書き出す）、`OshiDao` / `EventDao`。`database/model/` に `OshiEntity` / `EventEntity`、`database/util/` に列の型の `TypeConverter`（UUID・`LocalDate`・`LocalTime`・`Instant`）
   - 予定の `oshiId` は推しへの外部キー（`ON DELETE CASCADE`）。推しを消すと結び付いた予定も同じ書き込みで消える。結び付く推しが無い予定は保存できない
-  - 一覧は登録した時刻（`createdAt`）の順に読む。保存は `@Upsert`（同じ id があれば行を書き換える）。
+  - 一覧は登録した時刻（`createdAt`）の順に読む。時刻が同じ行どうしの並びを SQLite は決めないので、
+    推しは名前・id、予定は id を 2 つ目以降の基準にして毎回同じ並びにする（予定の表示の並びは UseCase の安定ソートなので、この並びが残る）。保存は `@Upsert`（同じ id があれば行を書き換える）。
     行を消して入れ直す `REPLACE` は、推しなら結び付いた予定まで消すため使わない
   - ピン留めは 1 件だけ。ピン留めした予定の保存と、ほかの予定のピン留めを外すのは 1 つのトランザクションで行う
   - `OshiLocalDataSource` / `EventLocalDataSource` は DAO を受け取り、読み込みの `Flow` と書き込みを持つ。行は Entity で受け渡す。
