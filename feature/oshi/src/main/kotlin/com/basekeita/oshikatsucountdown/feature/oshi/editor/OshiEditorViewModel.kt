@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.time.Clock
 
 /**
  * 推しの登録・編集。写真の取り込みと差し替え（`SaveOshiUseCase`）、結び付いた予定ごとの削除（`DeleteOshiUseCase`）を呼ぶ。
@@ -45,6 +46,7 @@ constructor(
     eventRepository: EventRepository,
     private val saveOshi: SaveOshiUseCase,
     private val deleteOshi: DeleteOshiUseCase,
+    private val clock: Clock,
 ) : ViewModel() {
     @AssistedFactory
     interface Factory {
@@ -177,6 +179,7 @@ constructor(
                     name = currentDraft.name,
                     color = currentDraft.color.toModel(),
                     photoChange = currentDraft.photoChange,
+                    now = clock.instant(),
                 )
                 finished.value = true
             } catch (exception: IOException) {

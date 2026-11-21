@@ -10,20 +10,24 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
+import java.time.Instant
 import java.util.UUID
 
 class SaveOshiUseCaseTest {
+    private val registeredAt = Instant.parse("2026-11-08T10:00:00Z")
+
     @Test
     fun `新しい推しを名前を整えて保存する`() = runTest {
         val oshiRepository = FakeOshiRepository()
         val saveOshi = SaveOshiUseCase(oshiRepository, RecordingPhotoRepository())
 
-        val saved = saveOshi(current = null, name = "  ミナト ", color = OshiColor.BLUE, photoChange = PhotoChange.Keep)
+        val saved = saveOshi(current = null, name = "  ミナト ", color = OshiColor.BLUE, photoChange = PhotoChange.Keep, now = registeredAt)
 
         assertEquals(listOf(saved), oshiRepository.oshis.value)
         assertEquals("ミナト", saved?.name)
         assertEquals(OshiColor.BLUE, saved?.color)
         assertNull(saved?.photoPath)
+        assertEquals(registeredAt, saved?.createdAt)
     }
 
     @Test
@@ -31,20 +35,21 @@ class SaveOshiUseCaseTest {
         val oshiRepository = FakeOshiRepository()
         val saveOshi = SaveOshiUseCase(oshiRepository, RecordingPhotoRepository())
 
-        assertNull(saveOshi(current = null, name = " 　", color = OshiColor.PINK, photoChange = PhotoChange.Keep))
+        assertNull(saveOshi(current = null, name = " 　", color = OshiColor.PINK, photoChange = PhotoChange.Keep, now = registeredAt))
         assertEquals(emptyList<Oshi>(), oshiRepository.oshis.value)
     }
 
     @Test
     fun `写真を差し替えたら取り込んで前の写真を消す`() = runTest {
-        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg")
+        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg", createdAt = Instant.EPOCH)
         val oshiRepository = FakeOshiRepository(listOf(current))
         val photoRepository = RecordingPhotoRepository(importedPath = "/photos/new.jpg")
         val saveOshi = SaveOshiUseCase(oshiRepository, photoRepository)
 
-        val saved = saveOshi(current, "ひより", OshiColor.ORANGE, PhotoChange.Replace("content://picked/1"))
+        val saved = saveOshi(current, "ひより", OshiColor.ORANGE, PhotoChange.Replace("content://picked/1"), registeredAt)
 
         assertEquals(current.id, saved?.id)
+        assertEquals(current.createdAt, saved?.createdAt)
         assertEquals("/photos/new.jpg", oshiRepository.oshis.value.single().photoPath)
         assertEquals(listOf("content://picked/1"), photoRepository.importedUris)
         assertEquals(listOf("/photos/old.jpg"), photoRepository.deletedPaths)
@@ -52,12 +57,12 @@ class SaveOshiUseCaseTest {
 
     @Test
     fun `取り込めなければ今の写真のまま保存する`() = runTest {
-        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg")
+        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg", createdAt = Instant.EPOCH)
         val oshiRepository = FakeOshiRepository(listOf(current))
         val photoRepository = RecordingPhotoRepository(importedPath = null)
         val saveOshi = SaveOshiUseCase(oshiRepository, photoRepository)
 
-        saveOshi(current, "ひより", OshiColor.RED, PhotoChange.Replace("content://picked/1"))
+        saveOshi(current, "ひより", OshiColor.RED, PhotoChange.Replace("content://picked/1"), registeredAt)
 
         assertEquals("/photos/old.jpg", oshiRepository.oshis.value.single().photoPath)
         assertEquals(OshiColor.RED, oshiRepository.oshis.value.single().color)
@@ -66,12 +71,12 @@ class SaveOshiUseCaseTest {
 
     @Test
     fun `写真を外したら消す`() = runTest {
-        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg")
+        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg", createdAt = Instant.EPOCH)
         val oshiRepository = FakeOshiRepository(listOf(current))
         val photoRepository = RecordingPhotoRepository()
         val saveOshi = SaveOshiUseCase(oshiRepository, photoRepository)
 
-        saveOshi(current, "ひより", OshiColor.ORANGE, PhotoChange.Remove)
+        saveOshi(current, "ひより", OshiColor.ORANGE, PhotoChange.Remove, registeredAt)
 
         assertNull(oshiRepository.oshis.value.single().photoPath)
         assertEquals(listOf("/photos/old.jpg"), photoRepository.deletedPaths)
@@ -79,11 +84,11 @@ class SaveOshiUseCaseTest {
 
     @Test
     fun `保存に失敗したら取り込んだ写真を消して前の写真は残す`() = runTest {
-        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg")
+        val current = Oshi(name = "ひより", color = OshiColor.ORANGE, photoPath = "/photos/old.jpg", createdAt = Instant.EPOCH)
         val photoRepository = RecordingPhotoRepository(importedPath = "/photos/new.jpg")
         val saveOshi = SaveOshiUseCase(FailingOshiRepository(listOf(current)), photoRepository)
 
-        val thrown = runCatching { saveOshi(current, "ひより", OshiColor.ORANGE, PhotoChange.Replace("content://picked/1")) }
+        val thrown = runCatching { saveOshi(current, "ひより", OshiColor.ORANGE, PhotoChange.Replace("content://picked/1"), registeredAt) }
 
         assertTrue(thrown.exceptionOrNull() is IOException)
         assertEquals(listOf("/photos/new.jpg"), photoRepository.deletedPaths)

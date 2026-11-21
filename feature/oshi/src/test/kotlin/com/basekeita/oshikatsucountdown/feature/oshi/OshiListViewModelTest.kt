@@ -24,8 +24,8 @@ class OshiListViewModelTest {
 
     @Test
     fun `登録した順に予定の数を添えて出す`() = runTest(mainDispatcherRule.dispatcher) {
-        val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK)
-        val minato = Oshi(name = "ミナト", color = OshiColor.BLUE, photoPath = "/photos/minato.jpg")
+        val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, createdAt = Instant.EPOCH)
+        val minato = Oshi(name = "ミナト", color = OshiColor.BLUE, photoPath = "/photos/minato.jpg", createdAt = Instant.EPOCH)
         val event = OshiEvent(
             oshiId = lumina.id,
             type = EventType.LIVE,

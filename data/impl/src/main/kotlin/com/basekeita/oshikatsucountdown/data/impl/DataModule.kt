@@ -10,11 +10,8 @@ import com.basekeita.oshikatsucountdown.data.impl.repository.PhotoRepositoryImpl
 import com.basekeita.oshikatsucountdown.data.impl.repository.UserSettingsRepositoryImpl
 import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -30,10 +27,4 @@ abstract class DataModule {
 
     @Binds
     internal abstract fun bindsUserSettingsRepository(userSettingsRepository: UserSettingsRepositoryImpl): UserSettingsRepository
-
-    companion object {
-        @Provides
-        @DefaultDispatcher
-        internal fun providesDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
-    }
 }

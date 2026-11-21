@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
 import com.basekeita.oshikatsucountdown.data.definition.repository.EventRepository
@@ -15,6 +16,7 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -108,6 +110,13 @@ constructor(
             // 最初の値は描いてあるウィジェットと同じなので描き直さない
             .drop(1)
             .onEach { refreshAllWidgets(context) }
+            // 受けないとアプリのプロセスが落ちる（scope に例外のハンドラが無い）。描き直しのきっかけを作るだけなので、
+            // 止まってもウィジェットは前の表示のまま残り、日付の変わり目か次の起動で描き直される
+            .catch { exception -> Log.w(TAG, "ウィジェットの描き直しを止めます", exception) }
             .launchIn(scope)
+    }
+
+    private companion object {
+        const val TAG = "WidgetDataSync"
     }
 }

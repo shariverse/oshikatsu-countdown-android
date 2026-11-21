@@ -5,6 +5,7 @@ import com.basekeita.oshikatsucountdown.data.definition.model.OshiColor
 import com.basekeita.oshikatsucountdown.data.definition.repository.OshiRepository
 import com.basekeita.oshikatsucountdown.data.definition.repository.PhotoRepository
 import java.io.IOException
+import java.time.Instant
 import javax.inject.Inject
 
 /**
@@ -19,6 +20,7 @@ constructor(
 ) {
     /**
      * @param current 編集中の推し。新しく登録するときは null。
+     * @param now 今の時刻。新しく登録する推しの登録した時刻にする。
      * @return 保存した推し。名前が空のときは保存せず null。
      */
     suspend operator fun invoke(
@@ -26,6 +28,7 @@ constructor(
         name: String,
         color: OshiColor,
         photoChange: PhotoChange,
+        now: Instant,
     ): Oshi? {
         val normalizedName = Oshi.normalizeName(name)
         if (normalizedName.isEmpty()) return null
@@ -39,7 +42,7 @@ constructor(
         }
 
         val oshi = current?.copy(name = normalizedName, color = color, photoPath = photoPath)
-            ?: Oshi(name = normalizedName, color = color, photoPath = photoPath)
+            ?: Oshi(name = normalizedName, color = color, photoPath = photoPath, createdAt = now)
         try {
             oshiRepository.save(oshi)
         } catch (exception: IOException) {

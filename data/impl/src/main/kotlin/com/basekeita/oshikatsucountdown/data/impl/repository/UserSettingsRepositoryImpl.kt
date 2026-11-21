@@ -2,7 +2,7 @@ package com.basekeita.oshikatsucountdown.data.impl.repository
 
 import com.basekeita.oshikatsucountdown.data.definition.model.UserSettings
 import com.basekeita.oshikatsucountdown.data.definition.repository.UserSettingsRepository
-import com.basekeita.oshikatsucountdown.local.OshikatsuLocalDataSource
+import com.basekeita.oshikatsucountdown.local.UserSettingsLocalDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
@@ -10,7 +10,7 @@ import javax.inject.Inject
 internal class UserSettingsRepositoryImpl
 @Inject
 constructor(
-    private val localDataSource: OshikatsuLocalDataSource,
+    private val localDataSource: UserSettingsLocalDataSource,
 ) : UserSettingsRepository {
     override val settings: Flow<UserSettings> =
         combine(

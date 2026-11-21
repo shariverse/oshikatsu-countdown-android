@@ -8,9 +8,10 @@ import com.basekeita.oshikatsucountdown.data.definition.repository.PhotoReposito
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.UUID
 
-/** メモリに持つ `OshiRepository`。 */
+/** メモリに持つ `OshiRepository`。[linkedEvents] を渡すと、推しを消したときに結び付いた予定も消す（データベースの外部キーと同じ）。 */
 internal class FakeOshiRepository(
     initial: List<Oshi> = emptyList(),
+    private val linkedEvents: FakeEventRepository? = null,
 ) : OshiRepository {
     override val oshis = MutableStateFlow(initial)
 
@@ -31,6 +32,7 @@ internal class FakeOshiRepository(
 
     override suspend fun delete(id: UUID) {
         oshis.value = oshis.value.filter { it.id != id }
+        linkedEvents?.let { events -> events.events.value = events.events.value.filter { it.oshiId != id } }
     }
 }
 
@@ -46,10 +48,6 @@ internal class FakeEventRepository(
 
     override suspend fun delete(id: UUID) {
         events.value = events.value.filter { it.id != id }
-    }
-
-    override suspend fun deleteByOshi(oshiId: UUID) {
-        events.value = events.value.filter { it.oshiId != oshiId }
     }
 
     override suspend fun setPinned(

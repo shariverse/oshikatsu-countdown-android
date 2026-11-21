@@ -13,6 +13,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.kotlinx.coroutines.test)
-    // 一時ファイルの DataStore を作って OshikatsuLocalDataSource に渡すため
-    testImplementation(libs.androidx.datastore.preferences)
+    // メモリの上の Room を作って local の DataSource に渡すため
+    testImplementation(libs.androidx.room.runtime)
+    // Room は Context が要るため、JVM のテストは Robolectric の上で動かす
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }

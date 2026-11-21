@@ -47,8 +47,6 @@ class WidgetConfigureViewModelTest {
 
         override suspend fun delete(id: UUID) = Unit
 
-        override suspend fun deleteByOshi(oshiId: UUID) = Unit
-
         override suspend fun setPinned(
             id: UUID,
             pinned: Boolean,
@@ -88,7 +86,7 @@ class WidgetConfigureViewModelTest {
         }
     }
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK)
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, createdAt = Instant.EPOCH)
 
     private fun event(
         title: String,

@@ -1,0 +1,136 @@
+package com.basekeita.oshikatsucountdown.local
+
+import com.basekeita.oshikatsucountdown.local.database.model.EventEntity
+import com.basekeita.oshikatsucountdown.local.database.model.OshiEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.io.IOException
+import java.time.Instant
+import java.time.LocalDate
+import java.util.UUID
+
+/** 推しと予定の結び付き（推しの保存・削除が予定に与えるもの。購読している一覧に届くかも含む）と、登録した順の並び。 */
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+class OshiLocalDataSourceTest {
+    private val testScope = TestScope(UnconfinedTestDispatcher())
+    private val database = testDatabase()
+    private val oshiDataSource = OshiLocalDataSource(database.oshiDao())
+    private val eventDataSource = EventLocalDataSource(database.eventDao())
+
+    private val lumina = oshi("LUMINA", "pink", registeredSecond = 1)
+    private val minato = oshi("ミナト", "blue", registeredSecond = 2)
+
+    private fun oshi(
+        name: String,
+        color: String,
+        registeredSecond: Long,
+    ) = OshiEntity(
+        id = UUID.randomUUID(),
+        name = name,
+        color = color,
+        photoPath = null,
+        createdAt = Instant.ofEpochSecond(registeredSecond),
+    )
+
+    private fun event(
+        title: String,
+        oshiId: UUID?,
+        registeredSecond: Long,
+    ) = EventEntity(
+        id = UUID.randomUUID(),
+        oshiId = oshiId,
+        type = "live",
+        title = title,
+        date = LocalDate.of(2026, 10, 18),
+        startTime = null,
+        venue = "",
+        repeatsYearly = false,
+        pinned = false,
+        createdAt = Instant.ofEpochSecond(registeredSecond),
+    )
+
+    @After
+    fun closeDatabase() {
+        database.close()
+    }
+
+    @Test
+    fun `推しは登録した順に並び保存し直しても結び付いた予定は消えない`() = testScope.runTest {
+        oshiDataSource.upsertOshi(minato)
+        oshiDataSource.upsertOshi(lumina)
+        val live = event("5th LIVE", lumina.id, registeredSecond = 1)
+        eventDataSource.upsertEvent(live)
+
+        oshiDataSource.upsertOshi(lumina.copy(color = "purple"))
+
+        assertEquals(listOf(lumina.copy(color = "purple"), minato), oshiDataSource.oshis.first())
+        assertEquals(listOf(live), eventDataSource.events.first())
+    }
+
+    @Test
+    fun `推しを消すと結び付いた予定も消える`() = testScope.runTest {
+        oshiDataSource.upsertOshi(lumina)
+        oshiDataSource.upsertOshi(minato)
+        val luminaLive = event("LUMINA LIVE", lumina.id, registeredSecond = 1)
+        val minatoLive = event("ミナト LIVE", minato.id, registeredSecond = 2)
+        val unlinked = event("推しなし", null, registeredSecond = 3)
+        listOf(luminaLive, minatoLive, unlinked).forEach { eventDataSource.upsertEvent(it) }
+
+        oshiDataSource.deleteOshi(lumina.id)
+
+        assertEquals(listOf(minato), oshiDataSource.oshis.first())
+        assertEquals(listOf(minatoLive, unlinked), eventDataSource.events.first())
+    }
+
+    @Test
+    fun `結び付く推しが無い予定の保存はIOException`() = testScope.runTest {
+        val failure = runCatching { eventDataSource.upsertEvent(event("A", UUID.randomUUID(), registeredSecond = 1)) }.exceptionOrNull()
+
+        assertTrue(failure is IOException)
+        assertEquals(emptyList<EventEntity>(), eventDataSource.events.first())
+    }
+
+    @Test
+    fun `購読している予定の一覧に推しを消して消えた予定が届く`() = testScope.runTest {
+        oshiDataSource.upsertOshi(lumina)
+        oshiDataSource.upsertOshi(minato)
+        val luminaLive = event("LUMINA LIVE", lumina.id, registeredSecond = 1)
+        val minatoLive = event("ミナト LIVE", minato.id, registeredSecond = 2)
+        listOf(luminaLive, minatoLive).forEach { eventDataSource.upsertEvent(it) }
+        val received = Channel<List<EventEntity>>(Channel.UNLIMITED)
+        // Room は書き込みのあとに同じ一覧を流し直すことがあるので、変わったときだけ受ける
+        backgroundScope.launch { eventDataSource.events.distinctUntilChanged().collect { received.send(it) } }
+        assertEquals(listOf(luminaLive, minatoLive), received.receive())
+
+        oshiDataSource.deleteOshi(lumina.id)
+
+        assertEquals(listOf(minatoLive), received.receive())
+    }
+
+    @Test
+    fun `登録した時刻が同じ推しは名前の順で予定はidの順`() = testScope.runTest {
+        // 入れた順と逆の並びになるようにして、入れた順のまま返っているのではないことを確かめる
+        val minatoAtSameTime = oshi("ミナト", "blue", registeredSecond = 5)
+        val luminaAtSameTime = oshi("LUMINA", "pink", registeredSecond = 5)
+        listOf(minatoAtSameTime, luminaAtSameTime).forEach { oshiDataSource.upsertOshi(it) }
+        val laterId = event("A", null, registeredSecond = 5).copy(id = UUID.fromString("ffffffff-ffff-4fff-bfff-ffffffffffff"))
+        val earlierId = event("B", null, registeredSecond = 5).copy(id = UUID.fromString("00000000-0000-4000-8000-000000000000"))
+        listOf(laterId, earlierId).forEach { eventDataSource.upsertEvent(it) }
+
+        assertEquals(listOf(luminaAtSameTime, minatoAtSameTime), oshiDataSource.oshis.first())
+        assertEquals(listOf(earlierId, laterId), eventDataSource.events.first())
+    }
+}

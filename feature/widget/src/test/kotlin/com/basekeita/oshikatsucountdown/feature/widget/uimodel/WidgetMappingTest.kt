@@ -17,8 +17,8 @@ import java.util.UUID
 class WidgetMappingTest {
     private val today = LocalDate.of(2026, 10, 7)
 
-    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK)
-    private val hiyori = Oshi(name = "ひより", color = OshiColor.ORANGE)
+    private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, createdAt = Instant.EPOCH)
+    private val hiyori = Oshi(name = "ひより", color = OshiColor.ORANGE, createdAt = Instant.EPOCH)
 
     private fun event(
         title: String,

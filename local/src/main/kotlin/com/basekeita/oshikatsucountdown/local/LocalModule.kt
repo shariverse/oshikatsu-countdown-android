@@ -7,6 +7,10 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.room.Room
+import com.basekeita.oshikatsucountdown.local.database.EventDao
+import com.basekeita.oshikatsucountdown.local.database.OshiDao
+import com.basekeita.oshikatsucountdown.local.database.OshikatsuDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,4 +32,17 @@ object LocalModule {
         corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
         produceFile = { context.preferencesDataStoreFile(PREFERENCES_NAME) },
     )
+
+    /** 同じファイルを開く RoomDatabase を複数作ると変更の知らせが届かないため、アプリ全体で 1 つにする。 */
+    @Provides
+    @Singleton
+    fun providesOshikatsuDatabase(
+        @ApplicationContext context: Context,
+    ): OshikatsuDatabase = Room.databaseBuilder(context, OshikatsuDatabase::class.java, OshikatsuDatabase.DATABASE_NAME).build()
+
+    @Provides
+    fun providesOshiDao(database: OshikatsuDatabase): OshiDao = database.oshiDao()
+
+    @Provides
+    fun providesEventDao(database: OshikatsuDatabase): EventDao = database.eventDao()
 }
