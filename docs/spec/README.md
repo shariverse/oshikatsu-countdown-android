@@ -1,6 +1,6 @@
 <!--
   app-specs から生成したファイル。直接編集しない。
-  元: shariverse/app-specs@3fcc2bd96ab528c3993e1c314646ce69678cc4bc oshikatsu-countdown/README.md
+  元: shariverse/app-specs@2a37347c023304b7bac2fbab1ea34435ae775f37 oshikatsu-countdown/README.md
   変えるときは https://github.com/shariverse/app-specs に PR を出す。
 -->
 
@@ -30,6 +30,9 @@
 | [当日のライブアクティビティ](features/12-live-activity.md) | 予定 |
 | [シェア](features/13-share.md) | 予定 |
 | [推し活カウントダウン Plus](features/14-plus.md) | 予定 |
+| [推しの並べ替え](features/15-oshi-order.md) | 予定 |
+| [推しの写真ウィジェット](features/16-photo-widget.md) | 予定 |
+| [背景・飾りの着せ替え](features/17-dress-up.md) | 予定 |
 
 ## 読む順番
 
@@ -41,4 +44,4 @@
 - [デザインキャンバスの配色](design/design-canvas.md)
 - [Android 版だけの決定](platform.md)
 
-推し色の値は [`design/tokens.json`](design/tokens.json) にもある（表と同じ値）。
+推し色の値と、推しなしの予定の色・推し色を薄く敷くときの割合は [`design/tokens.json`](design/tokens.json) にもある（表と同じ値）。

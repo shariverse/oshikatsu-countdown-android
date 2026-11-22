@@ -1,10 +1,14 @@
 <!--
   app-specs から生成したファイル。直接編集しない。
-  元: shariverse/app-specs@3fcc2bd96ab528c3993e1c314646ce69678cc4bc oshikatsu-countdown/platforms/android.md
+  元: shariverse/app-specs@2a37347c023304b7bac2fbab1ea34435ae775f37 oshikatsu-countdown/platforms/android.md
   変えるときは https://github.com/shariverse/app-specs に PR を出す。
 -->
 
 # Android 版だけの決定
+
+## 対象
+
+- Android 11 以上
 
 ## 見た目
 
@@ -35,5 +39,7 @@
 ## 保存とバックアップ
 
 - 推し・写真・予定は、端末の中（データベース・DataStore・アプリの内部ストレージ）にだけ置く
+- 取り込む写真の JPEG の画質は 88
 - 保存・削除の失敗は Snackbar で出す
+- データを読み込めなかったときは、その画面に「データを読み込めませんでした」を出す
 - 自動バックアップと端末間の移行の対象にしない。機種変更では引き継がない
