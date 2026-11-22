@@ -1,5 +1,6 @@
 package com.basekeita.oshikatsucountdown.feature.settings
 
+import com.basekeita.oshikatsucountdown.data.definition.model.ReminderTiming
 import com.basekeita.oshikatsucountdown.data.definition.model.UserSettings
 import com.basekeita.oshikatsucountdown.data.definition.repository.UserSettingsRepository
 import com.basekeita.oshikatsucountdown.feature.settings.SettingsViewModel.ViewState
@@ -15,6 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.io.IOException
+import java.time.LocalTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -29,6 +31,17 @@ class SettingsViewModelTest {
         }
 
         override suspend fun setOnboardingCompleted(completed: Boolean) = Unit
+
+        override suspend fun setRemindersEnabled(enabled: Boolean) = Unit
+
+        override suspend fun setReminderTimingEnabled(
+            timing: ReminderTiming,
+            enabled: Boolean,
+        ) = Unit
+
+        override suspend fun setReminderTimeOfDay(time: LocalTime) = Unit
+
+        override suspend fun setNotificationPermissionRequested(requested: Boolean) = Unit
     }
 
     @Test
@@ -54,6 +67,17 @@ class SettingsViewModelTest {
             override suspend fun setShowPastEvents(show: Boolean) = Unit
 
             override suspend fun setOnboardingCompleted(completed: Boolean) = Unit
+
+            override suspend fun setRemindersEnabled(enabled: Boolean) = Unit
+
+            override suspend fun setReminderTimingEnabled(
+                timing: ReminderTiming,
+                enabled: Boolean,
+            ) = Unit
+
+            override suspend fun setReminderTimeOfDay(time: LocalTime) = Unit
+
+            override suspend fun setNotificationPermissionRequested(requested: Boolean) = Unit
         }
         val viewModel = SettingsViewModel(failingRepository, appVersionName = "1.2.3")
         backgroundScope.launch { viewModel.viewState.collect {} }
@@ -70,6 +94,17 @@ class SettingsViewModelTest {
             override suspend fun setShowPastEvents(show: Boolean): Unit = throw IOException("disk full")
 
             override suspend fun setOnboardingCompleted(completed: Boolean) = Unit
+
+            override suspend fun setRemindersEnabled(enabled: Boolean) = Unit
+
+            override suspend fun setReminderTimingEnabled(
+                timing: ReminderTiming,
+                enabled: Boolean,
+            ) = Unit
+
+            override suspend fun setReminderTimeOfDay(time: LocalTime) = Unit
+
+            override suspend fun setNotificationPermissionRequested(requested: Boolean) = Unit
         }
         val viewModel = SettingsViewModel(failingRepository, appVersionName = "1.2.3")
         backgroundScope.launch { viewModel.viewState.collect {} }
