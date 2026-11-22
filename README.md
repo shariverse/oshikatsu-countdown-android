@@ -2,7 +2,7 @@
 
 推し活の予定（推しのライブ・誕生日・発売日など）を登録し、その日まであと何日かを数える Android アプリ「推し活カウントダウン」。
 
-仕様は [`docs/SPEC.md`](docs/SPEC.md)、設計は [`docs/architecture.md`](docs/architecture.md) にまとめてある。
+仕様は [`docs/spec/`](docs/spec/README.md)（iOS・Android 共通の仕様リポジトリ [app-specs](https://github.com/shariverse/app-specs) から生成したもの。直接編集しない）、設計は [`docs/architecture.md`](docs/architecture.md) にまとめてある。
 
 ## 環境
 

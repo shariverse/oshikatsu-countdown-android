@@ -5,7 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## このリポジトリ
 
 **推し活カウントダウン**（推し活の予定まであと何日かを数えるアプリ）の Android 版。
-機能と画面の仕様は `docs/SPEC.md`、画面デザインの正は SPEC の冒頭にあるデザインキャンバス。設計は `docs/architecture.md`。
+機能と画面の仕様は `docs/spec/`（入口は `docs/spec/README.md`、Android 版だけの決定は `docs/spec/platform.md`）。画面デザインの正は、その 2 つに書いてあるデザインキャンバス。設計は `docs/architecture.md`。
+
+## 仕様（docs/spec/）
+
+- 仕様の正は、iOS・Android 共通の仕様リポジトリ [app-specs](https://github.com/shariverse/app-specs)。`docs/spec/` は、そこから Android 版として生成したもので、**直接編集しない**
+- 入口は `docs/spec/README.md`（機能と対応状況・読む順番）。方針は `product.md`、画面をまたぐ規則は `rules.md`、Android 版だけの決定は `platform.md`
+- 「Android 版では、まだ作っていない（予定）」の注記があるファイルは、これから作る機能。実装を `develop` に入れたら、app-specs でその機能の `status` の `android` を `shipped` にする
+- 仕様を変える・足すときは app-specs に PR を出す。main にマージされると、Bot が `spec-sync` ブランチの PR「【DOCS】仕様を app-specs に合わせる」を出す
+- `spec-sync` の PR は、実装が追いつくまで開けておく（PR の差分が、まだ取り込んでいない仕様の一覧になる）。実装するときは、`develop` から作業ブランチを切って `spec-sync` を取り込み（merge）、実装と一緒にマージする。
+  `spec-sync` は作り直されるので、直接コミットしない。`docs/spec/` のコンフリクトは手で解かず、`spec-sync` の側を採る
+- 仕様と実装が食い違っていたら、黙ってどちらかに寄せない。どちらが正しいかを確かめ、仕様を直すなら app-specs に PR を出す
 
 ## Build Commands
 
@@ -27,7 +37,7 @@ Gradle デーモンは `gradle/gradle-daemon-jvm.properties` の toolchain（25�
 
 ## 行動規約
 
-- **タスク開始前に必ず `CLAUDE.md` と `docs/architecture.md` を読むこと**
+- **タスク開始前に必ず `CLAUDE.md` と `docs/architecture.md` を読むこと**。機能に触れるタスクでは、`docs/spec/` の該当するファイルも読む
 - **ユーザーから質問された場合は、まず質問に答えること。** 回答によってその後の行動が変わる可能性があるため、作業が必要かを確認してから動く
 - **推論ベースで実装・変更・削除を行うことを禁止する。** コード・ドキュメントを変更する前に該当ファイルを読んで現状を確認する。不明な点はユーザーに確認する
 - **着手前に変更規模を見積もり、完遂できないと判断したら着手しない。** 完遂できる単位にスコープを縮小してから着手する
