@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -54,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -182,10 +184,15 @@ private fun EventEditorContent(
                         }
                     }
                 },
+                // M3 の全画面のダイアログ: 閉じる・見出し・保存（初回の導線では「あとで」を置き、保存は下の「保存してはじめる」）
                 actions = {
                     if (uiState.onboarding) {
                         TextButton(onClick = onClose, enabled = uiState.canClose) {
                             Text(text = stringResource(R.string.editor_onboarding_skip))
+                        }
+                    } else {
+                        TextButton(onClick = onSave, enabled = uiState.canSave) {
+                            Text(text = stringResource(UiR.string.save))
                         }
                     }
                 },
@@ -225,21 +232,17 @@ private fun EventEditorContent(
                     onVenueChange = onVenueChange,
                     onRepeatsYearlyChange = onRepeatsYearlyChange,
                 )
-                Button(
-                    onClick = onSave,
-                    enabled = uiState.canSave,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 52.dp)
-                        .padding(bottom = 16.dp),
-                ) {
-                    Text(
-                        text = if (uiState.onboarding) {
-                            stringResource(R.string.editor_onboarding_save)
-                        } else {
-                            stringResource(UiR.string.save)
-                        },
-                    )
+                if (uiState.onboarding) {
+                    Button(
+                        onClick = onSave,
+                        enabled = uiState.canSave,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 52.dp)
+                            .padding(bottom = 16.dp),
+                    ) {
+                        Text(text = stringResource(R.string.editor_onboarding_save))
+                    }
                 }
             }
         }
@@ -373,12 +376,18 @@ private fun ColumnScope.EventForm(
         modifier = Modifier.fillMaxWidth(),
     )
 
+    // 行全体で切り替え、スイッチの役割で読み上げる（スイッチは押下を受けず、名前は行の見出しになる）
     ListItem(
+        modifier = Modifier.toggleable(
+            value = draft.repeatsYearly,
+            role = Role.Switch,
+            onValueChange = onRepeatsYearlyChange,
+        ),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         headlineContent = { Text(text = stringResource(R.string.editor_repeat_title)) },
         supportingContent = { Text(text = stringResource(R.string.editor_repeat_supporting)) },
         trailingContent = {
-            Switch(checked = draft.repeatsYearly, onCheckedChange = onRepeatsYearlyChange)
+            Switch(checked = draft.repeatsYearly, onCheckedChange = null)
         },
     )
 

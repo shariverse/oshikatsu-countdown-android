@@ -9,8 +9,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -81,8 +83,12 @@ import com.basekeita.oshikatsucountdown.ui.R as UiR
 /** 入力欄の幅の上限。タブレットで横に伸びすぎないようにする。 */
 private val formMaxWidth = 560.dp
 
-/** 推し色の見本を 1 行に並べる数。12 色を 2 行に収める。 */
+/** 推し色の見本を 1 行に並べる数の上限。12 色を 2 行に収める。 */
 private const val SWATCH_COLUMNS = 6
+
+/** 推し色の見本の最小の大きさ（押せる範囲の 48dp）と間隔。 */
+private val swatchMinSize = 48.dp
+private val swatchSpacing = 8.dp
 
 /**
  * 推しの登録・編集の Route。写真（Photo Picker）・名前・推し色を入れる。
@@ -188,17 +194,23 @@ private fun OshiEditorContent(
                         }
                     }
                 },
+                // M3 の全画面のダイアログ: 閉じる・見出し・保存（初回の導線では「あとで」を置き、登録は下の「次へ」）
                 actions = {
                     if (uiState.onboarding) {
                         TextButton(onClick = onClose, enabled = uiState.canClose) {
                             Text(text = stringResource(R.string.oshi_editor_onboarding_skip))
                         }
-                    } else if (!uiState.isNew) {
-                        IconButton(onClick = { confirmingDelete = true }) {
-                            Icon(
-                                painter = painterResource(UiR.drawable.ic_delete),
-                                contentDescription = stringResource(R.string.oshi_editor_delete),
-                            )
+                    } else {
+                        if (!uiState.isNew) {
+                            IconButton(onClick = { confirmingDelete = true }) {
+                                Icon(
+                                    painter = painterResource(UiR.drawable.ic_delete),
+                                    contentDescription = stringResource(R.string.oshi_editor_delete),
+                                )
+                            }
+                        }
+                        TextButton(onClick = onSave, enabled = uiState.canSave) {
+                            Text(text = stringResource(UiR.string.save))
                         }
                     }
                 },
@@ -251,21 +263,17 @@ private fun OshiEditorContent(
                     style = MaterialTheme.typography.bodySmall,
                     color = OshikatsuTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(
-                    onClick = onSave,
-                    enabled = uiState.canSave,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 52.dp)
-                        .padding(bottom = 16.dp),
-                ) {
-                    Text(
-                        text = if (uiState.onboarding) {
-                            stringResource(R.string.oshi_editor_onboarding_next)
-                        } else {
-                            stringResource(UiR.string.save)
-                        },
-                    )
+                if (uiState.onboarding) {
+                    Button(
+                        onClick = onSave,
+                        enabled = uiState.canSave,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 52.dp)
+                            .padding(bottom = 16.dp),
+                    ) {
+                        Text(text = stringResource(R.string.oshi_editor_onboarding_next))
+                    }
                 }
             }
         }
@@ -381,20 +389,27 @@ private fun ColorPalette(
             style = MaterialTheme.typography.labelLarge,
             color = OshikatsuTheme.colorScheme.onSurfaceVariant,
         )
-        Column(
-            modifier = Modifier.selectableGroup(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // 間隔を 8dp にすると、幅 360dp の画面でも見本 1 つが 48dp になる
-            OshiColorUiModel.entries.chunked(SWATCH_COLUMNS).forEach { rowColors ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    rowColors.forEach { oshiColor ->
-                        ColorSwatch(
-                            oshiColor = oshiColor,
-                            selected = oshiColor == selected,
-                            onClick = { onSelect(oshiColor) },
-                            modifier = Modifier.weight(1f),
-                        )
+        BoxWithConstraints {
+            // ふだんは 6 列。幅が狭くて見本 1 つが 48dp を切るときは列を減らす（分割画面・表示サイズを大きくしたとき）
+            val columns = ((maxWidth + swatchSpacing) / (swatchMinSize + swatchSpacing)).toInt().coerceIn(1, SWATCH_COLUMNS)
+            Column(
+                modifier = Modifier.selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(swatchSpacing),
+            ) {
+                OshiColorUiModel.entries.chunked(columns).forEach { rowColors ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(swatchSpacing)) {
+                        rowColors.forEach { oshiColor ->
+                            ColorSwatch(
+                                oshiColor = oshiColor,
+                                selected = oshiColor == selected,
+                                onClick = { onSelect(oshiColor) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        // 最後の行が短くても、見本の大きさをほかの行とそろえる
+                        repeat(columns - rowColors.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
