@@ -2,12 +2,18 @@ package com.basekeita.oshikatsucountdown.data.definition.repository
 
 import com.basekeita.oshikatsucountdown.data.definition.model.Oshi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import java.io.IOException
 import java.util.UUID
 
 /** 推しの一覧。並びは登録した順。 */
 interface OshiRepository {
     /** 保存済みの推し。無いとき、データベースを読めないときは空。 */
     val oshis: Flow<List<Oshi>>
+
+    /** 保存済みの推しを 1 回読む。データベースを読めなければ [IOException]（[oshis] と違い空にしない）。 */
+    @Throws(IOException::class)
+    suspend fun readOshis(): List<Oshi> = oshis.first()
 
     /** 同じ id があれば置き換え、無ければ末尾に足す。 */
     suspend fun save(oshi: Oshi)

@@ -18,6 +18,8 @@ constructor(
     override val oshis: Flow<List<Oshi>> =
         localDataSource.oshis.map { entities -> entities.map { oshi -> oshi.toModel() } }
 
+    override suspend fun readOshis(): List<Oshi> = localDataSource.readOshis().map { oshi -> oshi.toModel() }
+
     override suspend fun save(oshi: Oshi) {
         localDataSource.upsertOshi(oshi.toEntity())
     }

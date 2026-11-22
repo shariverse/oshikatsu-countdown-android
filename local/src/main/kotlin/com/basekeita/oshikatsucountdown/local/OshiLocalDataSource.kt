@@ -3,6 +3,7 @@ package com.basekeita.oshikatsucountdown.local
 import com.basekeita.oshikatsucountdown.local.database.OshiDao
 import com.basekeita.oshikatsucountdown.local.database.model.OshiEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
@@ -15,6 +16,10 @@ constructor(
 ) {
     /** 登録した順。読めないときは空。 */
     val oshis: Flow<List<OshiEntity>> = oshiDao.getOshiEntities().emptyOnDatabaseError()
+
+    /** 登録した順に 1 回読む。読めなければ [IOException]（読めないことと空を分けたいとき）。 */
+    @Throws(IOException::class)
+    suspend fun readOshis(): List<OshiEntity> = readDatabase { oshiDao.getOshiEntities().first() }
 
     /** 同じ id があれば書き換え、無ければ足す。 */
     @Throws(IOException::class)
