@@ -2,7 +2,7 @@
 
 ## 概要
 
-推し活の予定までの残り日数を数えるアプリ「推し活カウントダウン」の Android 版。機能と画面の仕様は [`SPEC.md`](SPEC.md)。
+推し活の予定までの残り日数を数えるアプリ「推し活カウントダウン」の Android 版。機能と画面の仕様は [`spec/`](spec/README.md)。
 
 - Android 推奨アーキテクチャ（UI / Domain / Data 層、UDF、`StateFlow`）で組む
 
