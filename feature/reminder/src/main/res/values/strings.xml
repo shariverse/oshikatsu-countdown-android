@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reminder_channel_name">予定の通知</string>
+    <string name="reminder_channel_description">30 日前・7 日前・前日・当日・開演 1 時間前に、予定を知らせます</string>
+    <string name="reminder_days_left">あと %1$d 日</string>
+    <string name="reminder_day_before">いよいよ明日！</string>
+    <string name="reminder_hour_left">あと 1 時間</string>
+    <!-- 開始の時刻（「開演 17:00」）。%1$s は呼び名、%2$s は時刻 -->
+    <string name="reminder_start_time">%1$s %2$s</string>
+
+    <!-- 当日のカウントダウン -->
+    <string name="countdown_channel_name">当日のカウントダウン</string>
+    <string name="countdown_channel_description">開始の時刻がある予定の当日、開演の 3 時間前から開演までの時間を数えます</string>
+    <!-- 残りの見出し（「開演まで」）。%1$s は開始の時刻の呼び名 -->
+    <string name="countdown_until_start">%1$sまで</string>
+    <string name="countdown_started">今日は当日！</string>
+    <!-- 本文の区切り。ホームの一覧の行と同じ -->
+    <string name="countdown_body">%1$s · %2$s</string>
+</resources>

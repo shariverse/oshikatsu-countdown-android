@@ -39,6 +39,7 @@ dependencies {
     implementation(projects.feature.oshi)
     implementation(projects.feature.settings)
     implementation(projects.feature.widget)
+    implementation(projects.feature.reminder)
     implementation(projects.ui)
     implementation(projects.navigation)
     implementation(projects.domain)

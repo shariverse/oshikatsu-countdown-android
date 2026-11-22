@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通知の小アイコン。アプリのアイコンの前景（app の ic_launcher_foreground）と同じ塗りのハートを、24dp の枠に収める。
+     色はシステムが付けるので、形（白で塗った部分）だけを持つ -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="52"
+    android:viewportHeight="52">
+    <group
+        android:translateX="-28"
+        android:translateY="-29">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M54,76C54,76 32,62 32,46.5C32,39.6 37.4,34 44,34C48.2,34 51.9,36.2 54,39.6C56.1,36.2 59.8,34 64,34C70.6,34 76,39.6 76,46.5C76,62 54,76 54,76Z" />
+    </group>
+</vector>

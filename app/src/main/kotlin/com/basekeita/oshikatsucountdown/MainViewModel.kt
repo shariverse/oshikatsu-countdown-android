@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -41,10 +42,13 @@ constructor(
 
     /**
      * @property launchRoute アプリの外から開くように頼まれた画面。開いたら null に戻す。
+     * @property asksNotificationPermissionOnSave 予定を保存した直後に通知の許可を求める（まだ一度も求めていない）。
+     *   設定の「予定を通知する」が OFF でも求める。当日のカウントダウンは「予定を通知する」とは別で、Android では同じ通知の許可が要るため。
      */
     data class UiState(
         val onboardingCompleted: Boolean,
         val launchRoute: NavKey?,
+        val asksNotificationPermissionOnSave: Boolean = false,
     )
 
     private val launchRoute = MutableStateFlow<NavKey?>(null)
@@ -61,9 +65,16 @@ constructor(
         }
             .distinctUntilChanged()
 
+    private val asksNotificationPermissionOnSave: Flow<Boolean> =
+        userSettingsRepository.settings
+            .map { settings -> !settings.notificationPermissionRequested }
+            .distinctUntilChanged()
+
     val viewState: StateFlow<ViewState> =
-        combine(onboardingCompleted, launchRoute) { completed, route ->
-            ViewState.Success(UiState(onboardingCompleted = completed, launchRoute = route)) as ViewState
+        combine(onboardingCompleted, launchRoute, asksNotificationPermissionOnSave) { completed, route, asksPermission ->
+            ViewState.Success(
+                UiState(onboardingCompleted = completed, launchRoute = route, asksNotificationPermissionOnSave = asksPermission),
+            ) as ViewState
         }
             .catch { error -> emit(ViewState.Error(error.message.orEmpty())) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, ViewState.Loading)
@@ -83,6 +94,17 @@ constructor(
     /** アプリの外（ウィジェット）から画面を開くように頼まれた。 */
     fun onLaunchRequest(route: NavKey) {
         launchRoute.value = route
+    }
+
+    /** 予定を保存した直後に通知の許可を求めた。次からは求めない（設定の画面で「設定を開く」を出す）。 */
+    fun onNotificationPermissionRequested() {
+        viewModelScope.launch {
+            try {
+                userSettingsRepository.setNotificationPermissionRequested(true)
+            } catch (exception: IOException) {
+                // 印を残せなくても、次に保存したときにもう一度求めるだけ
+            }
+        }
     }
 
     /** 頼まれた画面を開いた（導線の途中で開かなかったときも含む）。 */

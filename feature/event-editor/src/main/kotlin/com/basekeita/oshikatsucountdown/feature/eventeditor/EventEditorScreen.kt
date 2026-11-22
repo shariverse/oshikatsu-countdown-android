@@ -100,7 +100,7 @@ internal fun EventEditorScreen(
 
     val isFinished = (viewState as? ViewState.Success)?.uiState?.isFinished == true
     LaunchedEffect(isFinished) {
-        if (isFinished) finish()
+        if (isFinished) onNavigationEvent(EventEditorNavigationEvent.Saved)
     }
 
     when (val state = viewState) {
