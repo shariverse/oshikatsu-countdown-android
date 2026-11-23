@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -31,12 +32,14 @@ class MainActivity : ComponentActivity() {
     lateinit var reminderSync: ReminderSync
 
     /** 通知の許可のダイアログ。許可されたかどうかは、閉じたときの onResume で予約し直して反映する。 */
-    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        viewModel.onNotificationPermissionResult()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
-        splashScreen.setKeepOnScreenCondition { viewModel.viewState.value is MainViewModel.ViewState.Loading }
+        splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.isLoading }
         // 作り直し（画面の回転など）では、開いたときの Intent をもう一度受けない
         if (savedInstanceState == null) {
             intent.toLaunchRoute()?.let(viewModel::onLaunchRequest)
@@ -44,30 +47,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             OshikatsuTheme {
-                val viewState by viewModel.viewState.collectAsStateWithLifecycle()
-                when (val state = viewState) {
-                    MainViewModel.ViewState.Loading -> Unit
-
-                    // 設定が読めなくても使えるよう、導線は出さずにタブを出す
-                    is MainViewModel.ViewState.Error -> {
-                        OshikatsuApp(
-                            onboardingCompleted = true,
-                            launchRoute = null,
-                            onLaunchRouteHandle = viewModel::onLaunchRouteHandle,
-                            onOnboardingFinish = viewModel::onOnboardingFinish,
-                            onEventSave = ::requestNotificationPermissionIfNeeded,
-                        )
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                LaunchedEffect(uiState.isRequestingNotificationPermission) {
+                    if (uiState.isRequestingNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
-
-                    is MainViewModel.ViewState.Success -> {
-                        OshikatsuApp(
-                            onboardingCompleted = state.uiState.onboardingCompleted,
-                            launchRoute = state.uiState.launchRoute,
-                            onLaunchRouteHandle = viewModel::onLaunchRouteHandle,
-                            onOnboardingFinish = viewModel::onOnboardingFinish,
-                            onEventSave = ::requestNotificationPermissionIfNeeded,
-                        )
-                    }
+                }
+                if (!uiState.isLoading) {
+                    OshikatsuApp(
+                        // 設定が読めなくても使えるよう、読めなければ導線は出さずにタブを出す
+                        onboardingCompleted = uiState.onboardingCompleted || uiState.isLoadFailed,
+                        launchRoute = uiState.launchRoute,
+                        onLaunchRouteHandle = viewModel::onLaunchRouteHandle,
+                        onOnboardingFinish = viewModel::onOnboardingFinish,
+                        onEventSave = ::onEventSave,
+                    )
                 }
             }
         }
@@ -82,18 +76,17 @@ class MainActivity : ComponentActivity() {
         reminderSync.requestRefreshAll()
     }
 
-    /** 予定を保存した直後、まだ一度も求めていなければ、通知の許可を求める（Android 13 以降）。 */
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-
-        val state = viewModel.viewState.value as? MainViewModel.ViewState.Success ?: return
-
-        if (!state.uiState.asksNotificationPermissionOnSave) return
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
-
-        viewModel.onNotificationPermissionRequested()
-        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    /** 予定を保存し終えた。端末の通知の許可の状態を読んで渡す（求めるかは ViewModel が決める）。 */
+    private fun onEventSave() {
+        val notificationsGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+        viewModel.onEventSave(
+            canRequestNotificationPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
+            notificationsGranted = notificationsGranted,
+        )
     }
 
     override fun onNewIntent(intent: Intent) {
