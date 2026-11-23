@@ -69,15 +69,16 @@ class ReminderScheduler @Inject internal constructor(
         } else {
             emptyList()
         }
-        val planned = plan.map { it.identifier }.toSet()
-        val previous = alarmStore.identifiers(ReminderAlarmStore.Kind.REMINDER_ALARMS)
-        // 途中で止まっても（プロセスが死ぬ・呼んだ scope が取り消される）入れたアラームを後で取り消せるよう、足す前に記録に入れておく
-        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.REMINDER_ALARMS, previous + planned)
+        val records = recordReplacement(
+            previous = alarmStore.identifiers(ReminderAlarmStore.Kind.REMINDER_ALARMS),
+            planned = plan.map { it.identifier }.toSet(),
+        )
+        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.REMINDER_ALARMS, records.writeAhead)
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-        (previous - planned).forEach { identifier -> cancelAlarm(alarmManager, identifier) }
+        records.toCancel.forEach { identifier -> cancelAlarm(alarmManager, identifier) }
         // 同じ識別子の PendingIntent は置き換わるので、計画にあるものはすべて入れ直す
         plan.forEach { reminder -> setExactAlarm(alarmManager, reminder.fireAt.toEpochMilli(), firePendingIntent(reminder)) }
-        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.REMINDER_ALARMS, planned)
+        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.REMINDER_ALARMS, records.final)
     }
 
     private fun cancelAlarm(

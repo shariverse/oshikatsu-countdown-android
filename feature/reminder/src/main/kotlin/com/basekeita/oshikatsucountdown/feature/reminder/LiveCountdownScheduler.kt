@@ -91,19 +91,20 @@ class LiveCountdownScheduler @Inject internal constructor(
             val oshi = event.oshiId?.let { oshiId -> oshis.firstOrNull { it.id == oshiId } }
             window.identifier to liveCountdownContentOf(window, event, oshi, wording)
         }
-        val shown = contents.map { (identifier, _) -> identifier }.toSet()
-        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_NOTIFICATIONS, previousShown + shown)
-        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_ALARMS, previousAlarmKeys + alarms.keys)
+        val notificationRecords = recordReplacement(previous = previousShown, planned = contents.map { (identifier, _) -> identifier }.toSet())
+        val alarmRecords = recordReplacement(previous = previousAlarmKeys, planned = alarms.keys)
+        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_NOTIFICATIONS, notificationRecords.writeAhead)
+        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_ALARMS, alarmRecords.writeAhead)
 
-        (previousShown - shown).forEach { cancelWithTag(context, it) }
+        notificationRecords.toCancel.forEach { cancelWithTag(context, it) }
         contents.forEach { (identifier, content) -> postCountdown(identifier, content, now, alert = identifier in alerts) }
 
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-        (previousAlarmKeys - alarms.keys).forEach { key -> cancelAlarm(alarmManager, key) }
+        alarmRecords.toCancel.forEach { key -> cancelAlarm(alarmManager, key) }
         alarms.forEach { (key, triggerAt) -> setExactAlarm(alarmManager, triggerAt.toEpochMilli(), alarmPendingIntent(key)) }
 
-        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_NOTIFICATIONS, shown)
-        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_ALARMS, alarms.keys)
+        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_NOTIFICATIONS, notificationRecords.final)
+        alarmStore.setIdentifiers(ReminderAlarmStore.Kind.COUNTDOWN_ALARMS, alarmRecords.final)
     }
 
     /**
