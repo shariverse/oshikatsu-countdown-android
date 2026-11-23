@@ -12,6 +12,25 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
+/**
+ * `AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`（Android 12 で足された知らせ）。
+ * Android 11 では届かないだけなので版で分けずに受ける。API 31 の定数を参照すると lint（InlinedApi）が止めるので、同じ値の文字列で持つ。
+ */
+internal const val ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED = "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"
+
+/**
+ * 予定の通知と当日のカウントダウンを置き直すきっかけのうち、システムから届くもの（マニフェストの `ReminderSystemReceiver` の intent-filter と同じ）。
+ * 再起動（アラームは再起動で消える）、アプリの更新、端末の時刻・タイムゾーンの変更（アラームは UTC で入っているので計画し直す）、
+ * 正確なアラームの許可（Android 12。許可されたときだけ届く。取り消されると入れてあった正確なアラームは消える）。
+ */
+internal val REMINDER_SYSTEM_ACTIONS = setOf(
+    Intent.ACTION_BOOT_COMPLETED,
+    Intent.ACTION_MY_PACKAGE_REPLACED,
+    Intent.ACTION_TIME_CHANGED,
+    Intent.ACTION_TIMEZONE_CHANGED,
+    ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
+)
+
 /** 予約した時刻に、予定の通知を出す（`ReminderPoster`）。 */
 class ReminderAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(
@@ -49,17 +68,13 @@ private fun Intent.toFiredReminder(): FiredReminder? {
     return FiredReminder(identifier, eventId, timing, occurrenceDate, fireAt)
 }
 
-/**
- * 予定の通知と当日のカウントダウンを置き直すきっかけのうち、システムから届くもの。
- * 再起動（アラームは再起動で消える）、アプリの更新、端末の時刻・タイムゾーンの変更（アラームは UTC で入っているので計画し直す）、
- * 正確なアラームの許可（Android 12。許可されたときだけ届く。取り消されると入れてあった正確なアラームは消える）。
- */
+/** システムから届くきっかけ（`REMINDER_SYSTEM_ACTIONS`）で、予定の通知と当日のカウントダウンを置き直す。 */
 class ReminderSystemReceiver : BroadcastReceiver() {
     override fun onReceive(
         context: Context,
         intent: Intent,
     ) {
-        if (intent.action !in systemActions) return
+        if (intent.action !in REMINDER_SYSTEM_ACTIONS) return
 
         val reminderSync = EntryPointAccessors.fromApplication<ReminderEntryPoint>(context).reminderSync()
         val pendingResult = goAsync()
@@ -70,21 +85,5 @@ class ReminderSystemReceiver : BroadcastReceiver() {
                 pendingResult.finish()
             }
         }
-    }
-
-    private companion object {
-        val systemActions = setOf(
-            Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_MY_PACKAGE_REPLACED,
-            Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED,
-            ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
-        )
-
-        /**
-         * `AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`（Android 12 で足された知らせ）。
-         * Android 11 では届かないだけなので版で分けずに受ける。API 31 の定数を参照すると lint（InlinedApi）が止めるので、同じ値の文字列で持つ。
-         */
-        const val ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED = "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"
     }
 }
