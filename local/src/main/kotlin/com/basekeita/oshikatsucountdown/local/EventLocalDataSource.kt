@@ -3,18 +3,21 @@ package com.basekeita.oshikatsucountdown.local
 import com.basekeita.oshikatsucountdown.local.database.EventDao
 import com.basekeita.oshikatsucountdown.local.database.model.EventEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 
 /** 予定の読み書き（Room の `events`）。 */
-class EventLocalDataSource
-@Inject
-constructor(
+class EventLocalDataSource @Inject constructor(
     private val eventDao: EventDao,
 ) {
     /** 登録した順。読めないときは空。 */
     val events: Flow<List<EventEntity>> = eventDao.getEventEntities().emptyOnDatabaseError()
+
+    /** 登録した順に 1 回読む。読めなければ [IOException]（読めないことと空を分けたいとき）。 */
+    @Throws(IOException::class)
+    suspend fun readEvents(): List<EventEntity> = readDatabase { eventDao.getEventEntities().first() }
 
     /**
      * 同じ id があれば書き換え、無ければ足す。ピン留めした予定なら、ほかの予定のピン留めを外す。

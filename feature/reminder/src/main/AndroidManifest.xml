@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Android 13 以降で通知を出す許可 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 決めた時刻ちょうどに通知する（SPEC 2.9）。Android 13 以降は USE_EXACT_ALARM（インストールのときに許可される）、
+         Android 12 は SCHEDULE_EXACT_ALARM（利用者が端末の設定で許可する）。Android 11 は権限が要らない -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <!-- 再起動で消えたアラームを予約し直す -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application>
+        <!-- 予約した時刻に通知を出す（AlarmManager からだけ届く） -->
+        <receiver
+            android:name=".ReminderAlarmReceiver"
+            android:exported="false" />
+
+        <!-- 当日のカウントダウンを出し始める・開演で変える・終える（AlarmManager からだけ届く） -->
+        <receiver
+            android:name=".LiveCountdownAlarmReceiver"
+            android:exported="false" />
+
+        <!-- 再起動・アプリの更新・端末の時刻とタイムゾーンの変更・正確なアラームの許可（システムからの送信は exported でなくても届く） -->
+        <receiver
+            android:name=".ReminderSystemReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

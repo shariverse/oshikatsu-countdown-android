@@ -70,6 +70,7 @@ private enum class OshikatsuTab(
  * @param launchRoute アプリの外（ウィジェット）から開くように頼まれた画面。ホームのタブに積む。
  * @param onLaunchRouteHandle `launchRoute` を開いた（導線の途中で開かなかったときも含む）。
  * @param onOnboardingFinish 導線の 2 歩目で保存した、または「あとで」を押した。
+ * @param onEventSave 予定を保存し終えた（通知の許可を求める）。
  */
 @Composable
 fun OshikatsuApp(
@@ -77,15 +78,16 @@ fun OshikatsuApp(
     launchRoute: NavKey?,
     onLaunchRouteHandle: () -> Unit,
     onOnboardingFinish: () -> Unit,
+    onEventSave: () -> Unit,
 ) {
     if (onboardingCompleted) {
-        OshikatsuTabs(launchRoute = launchRoute, onLaunchRouteHandle = onLaunchRouteHandle)
+        OshikatsuTabs(launchRoute = launchRoute, onLaunchRouteHandle = onLaunchRouteHandle, onEventSave = onEventSave)
     } else {
         // 導線の途中では開かない（導線を終えた後に急に開かないよう、ここで捨てる）
         LaunchedEffect(launchRoute) {
             if (launchRoute != null) onLaunchRouteHandle()
         }
-        OnboardingFlow(onFinish = onOnboardingFinish)
+        OnboardingFlow(onFinish = onOnboardingFinish, onEventSave = onEventSave)
     }
 }
 
@@ -94,7 +96,10 @@ fun OshikatsuApp(
  * 1 歩目には戻らない（登録した推しを同じ画面でもう一度登録させないため、1 歩目を 2 歩目に置き換える）。
  */
 @Composable
-private fun OnboardingFlow(onFinish: () -> Unit) {
+private fun OnboardingFlow(
+    onFinish: () -> Unit,
+    onEventSave: () -> Unit,
+) {
     val backStack = rememberNavBackStack(OshiEditorRoute(onboarding = true))
     val entries = rememberDecoratedNavEntries(
         backStack,
@@ -107,6 +112,11 @@ private fun OnboardingFlow(onFinish: () -> Unit) {
             }
             eventEditorEntry { event ->
                 when (event) {
+                    EventEditorNavigationEvent.Saved -> {
+                        onFinish()
+                        onEventSave()
+                    }
+
                     EventEditorNavigationEvent.Finished -> onFinish()
                 }
             }
@@ -131,6 +141,7 @@ private fun OnboardingFlow(onFinish: () -> Unit) {
 private fun OshikatsuTabs(
     launchRoute: NavKey?,
     onLaunchRouteHandle: () -> Unit,
+    onEventSave: () -> Unit,
 ) {
     var currentTab by rememberSaveable { mutableStateOf(OshikatsuTab.HOME) }
     val homeBackStack = rememberNavBackStack(HomeRoute)
@@ -147,9 +158,9 @@ private fun OshikatsuTabs(
     }
 
     // どのタブも毎回組み立て、選んでいないタブのエントリの状態も破棄しない
-    val homeEntries = rememberTabEntries(homeBackStack)
-    val oshiEntries = rememberTabEntries(oshiBackStack)
-    val settingsEntries = rememberTabEntries(settingsBackStack)
+    val homeEntries = rememberTabEntries(homeBackStack, onEventSave)
+    val oshiEntries = rememberTabEntries(oshiBackStack, onEventSave)
+    val settingsEntries = rememberTabEntries(settingsBackStack, onEventSave)
 
     val currentBackStack = when (currentTab) {
         OshikatsuTab.HOME -> homeBackStack
@@ -199,10 +210,16 @@ private fun rememberEntryDecorators(): List<NavEntryDecorator<NavKey>> = listOf(
 
 /** 1 つのタブのエントリ。 */
 @Composable
-private fun rememberTabEntries(backStack: NavBackStack<NavKey>): List<NavEntry<NavKey>> = rememberDecoratedNavEntries(backStack, rememberEntryDecorators(), tabEntryProvider(backStack))
+private fun rememberTabEntries(
+    backStack: NavBackStack<NavKey>,
+    onEventSave: () -> Unit,
+): List<NavEntry<NavKey>> = rememberDecoratedNavEntries(backStack, rememberEntryDecorators(), tabEntryProvider(backStack, onEventSave))
 
 /** 1 つのタブで出す画面。各画面の遷移の要求は、そのタブのバックスタックに積む・外す。 */
-private fun tabEntryProvider(backStack: NavBackStack<NavKey>): (NavKey) -> NavEntry<NavKey> = entryProvider {
+private fun tabEntryProvider(
+    backStack: NavBackStack<NavKey>,
+    onEventSave: () -> Unit,
+): (NavKey) -> NavEntry<NavKey> = entryProvider {
     homeEntry { event ->
         when (event) {
             is HomeNavigationEvent.OpenEvent -> backStack.add(EventDetailRoute(event.eventId))
@@ -217,6 +234,11 @@ private fun tabEntryProvider(backStack: NavBackStack<NavKey>): (NavKey) -> NavEn
     }
     eventEditorEntry { event ->
         when (event) {
+            EventEditorNavigationEvent.Saved -> {
+                backStack.popIfNotRoot()
+                onEventSave()
+            }
+
             EventEditorNavigationEvent.Finished -> backStack.popIfNotRoot()
         }
     }

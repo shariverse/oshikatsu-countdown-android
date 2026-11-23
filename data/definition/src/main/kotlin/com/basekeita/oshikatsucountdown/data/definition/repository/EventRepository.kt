@@ -2,12 +2,21 @@ package com.basekeita.oshikatsucountdown.data.definition.repository
 
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiEvent
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import java.io.IOException
 import java.util.UUID
 
 /** 予定の一覧。並びは登録した順（表示の順は UseCase が決める）。 */
 interface EventRepository {
     /** 保存済みの予定。無いとき、データベースを読めないときは空。 */
     val events: Flow<List<OshiEvent>>
+
+    /**
+     * 保存済みの予定を 1 回読む。データベースを読めなければ [IOException]（[events] と違い空にしない）。
+     * 読めないときに空として扱うと困るところ（通知の予約。空なら全部取り消してしまう）で使う。
+     */
+    @Throws(IOException::class)
+    suspend fun readEvents(): List<OshiEvent> = events.first()
 
     /** 同じ id があれば置き換え、無ければ末尾に足す。ピン留めした予定を保存したときは、ほかの予定のピン留めを外す。 */
     suspend fun save(event: OshiEvent)

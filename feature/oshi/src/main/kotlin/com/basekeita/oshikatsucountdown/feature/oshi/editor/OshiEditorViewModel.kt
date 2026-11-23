@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -37,12 +37,10 @@ import java.time.Clock
  * 保存・削除し終えると `isFinished` を立て、画面はそれを見て閉じる（先に閉じると `viewModelScope` が止まり、書き込みが途中で切れるため）。
  */
 @HiltViewModel(assistedFactory = OshiEditorViewModel.Factory::class)
-class OshiEditorViewModel
-@AssistedInject
-constructor(
+class OshiEditorViewModel @AssistedInject constructor(
     @Assisted private val oshiId: String?,
     @Assisted private val onboarding: Boolean,
-    oshiRepository: OshiRepository,
+    private val oshiRepository: OshiRepository,
     eventRepository: EventRepository,
     private val saveOshi: SaveOshiUseCase,
     private val deleteOshi: DeleteOshiUseCase,
@@ -56,158 +54,163 @@ constructor(
         ): OshiEditorViewModel
     }
 
-    sealed interface ViewState {
-        data object Loading : ViewState
-
-        data class Error(
-            val message: String,
-        ) : ViewState
-
-        data class Success(
-            val uiState: UiState,
-        ) : ViewState
-    }
-
     /**
+     * @property isLoadFailed 編集する推しを読めなかった。
      * @property photoSource 表示する写真。取り込み済みの写真の絶対パスか、選んだばかりの写真の `content://` の URI。
      * @property eventCount この推しに結び付いた予定の数（削除の確認に出す）。
-     * @property canSave 名前が空でなく、保存中でもない。
-     * @property canClose 保存・削除の途中でない。途中で閉じると `viewModelScope` ごと書き込みが止まるため、閉じる操作と戻る操作を止める。
+     * @property isWriting 保存・削除の途中。
      * @property isFinished 保存・削除し終えた。
      * @property writeFailure 保存・削除に失敗した。Snackbar で知らせ終えたら `onWriteFailureShown` で戻す。
      */
     data class UiState(
-        val name: String,
-        val color: OshiColorUiModel,
-        val photoSource: String?,
-        val isNew: Boolean,
-        val onboarding: Boolean,
-        val eventCount: Int,
-        val canSave: Boolean,
-        val canClose: Boolean,
-        val isFinished: Boolean,
-        val writeFailure: WriteFailureUiModel?,
-    )
+        val isLoading: Boolean = true,
+        val isLoadFailed: Boolean = false,
+        val name: String = "",
+        val color: OshiColorUiModel = OshiColor.DEFAULT.toUiModel(),
+        val photoSource: String? = null,
+        val isNew: Boolean = true,
+        val onboarding: Boolean = false,
+        val eventCount: Int = 0,
+        val isWriting: Boolean = false,
+        val isFinished: Boolean = false,
+        val writeFailure: WriteFailureUiModel? = null,
+    ) {
+        /** 名前が空でなく、保存・削除の途中でも、し終えてもいない。 */
+        val canSave: Boolean
+            get() = !isLoading && !isLoadFailed && Oshi.normalizeName(name).isNotEmpty() && !isWriting && !isFinished
+
+        /** 保存・削除の途中でない。途中で閉じると `viewModelScope` ごと書き込みが止まるため、閉じる操作と戻る操作を止める。 */
+        val canClose: Boolean
+            get() = !isWriting
+    }
 
     /** 入力中の値。写真は「今のまま」「外す」「差し替える」のどれかで持ち、保存するときに `PhotoChange` にする。 */
     private data class Draft(
-        val name: String,
-        val color: OshiColorUiModel,
-        val photoChange: PhotoChange,
+        val name: String = "",
+        val color: OshiColorUiModel = OshiColor.DEFAULT.toUiModel(),
+        val photoChange: PhotoChange = PhotoChange.Keep,
     )
 
-    /** 編集する推し。 */
-    private var original: Oshi? = null
+    /**
+     * 画面が持つ状態。
+     *
+     * @property isLoaded 編集する推し（登録なら空）から入力を始めた。
+     * @property original 編集する推し。登録は null。
+     */
+    private data class ScreenState(
+        val isLoaded: Boolean = false,
+        val draft: Draft = Draft(),
+        val original: Oshi? = null,
+        val isWriting: Boolean = false,
+        val isFinished: Boolean = false,
+        val writeFailure: WriteFailureUiModel? = null,
+    )
 
-    private val draft = MutableStateFlow<Draft?>(null)
-    private val busy = MutableStateFlow(false)
-    private val finished = MutableStateFlow(false)
-    private val writeFailure = MutableStateFlow<WriteFailureUiModel?>(null)
+    private val screenState = MutableStateFlow(ScreenState())
 
-    /** 最初に購読されたときに、編集する推し（登録なら空）から入力を始める。読めなければ `.catch` で `Error` にする。 */
-    private val loadedDraft = draft
+    /** 最初に購読されたときに 1 回だけ、編集する推し（登録なら空）から入力を始める。読めなければ `.catch` で `isLoadFailed` にする。 */
+    private val loadedScreenState = screenState
         .onStart {
-            if (draft.value == null) {
+            if (!screenState.value.isLoaded) {
                 val editing = oshiId?.let { id -> oshiRepository.oshis.first().firstOrNull { it.id.toString() == id } }
-                original = editing
-                draft.value = Draft(
+                val draft = Draft(
                     name = editing?.name.orEmpty(),
                     color = (editing?.color ?: OshiColor.DEFAULT).toUiModel(),
                     photoChange = PhotoChange.Keep,
                 )
+                screenState.update { it.copy(isLoaded = true, original = editing, draft = draft) }
             }
         }
-        .filterNotNull()
+        .filter { it.isLoaded }
 
-    val viewState: StateFlow<ViewState> =
-        combine(loadedDraft, eventRepository.events, busy, finished, writeFailure) { currentDraft, events, isBusy, isFinished, failure ->
-            val editing = original
-            val photoSource = when (val change = currentDraft.photoChange) {
+    val uiState: StateFlow<UiState> =
+        combine(loadedScreenState, eventRepository.events) { screen, events ->
+            val editing = screen.original
+            val photoSource = when (val change = screen.draft.photoChange) {
                 PhotoChange.Keep -> editing?.photoPath
                 PhotoChange.Remove -> null
                 is PhotoChange.Replace -> change.sourceUri
             }
-            val uiState = UiState(
-                name = currentDraft.name,
-                color = currentDraft.color,
+            UiState(
+                isLoading = false,
+                name = screen.draft.name,
+                color = screen.draft.color,
                 photoSource = photoSource,
                 isNew = editing == null,
                 onboarding = onboarding,
                 eventCount = editing?.let { oshi -> events.count { it.oshiId == oshi.id } } ?: 0,
-                canSave = Oshi.normalizeName(currentDraft.name).isNotEmpty() && !isBusy && !isFinished,
-                canClose = !isBusy,
-                isFinished = isFinished,
-                writeFailure = failure,
+                isWriting = screen.isWriting,
+                isFinished = screen.isFinished,
+                writeFailure = screen.writeFailure,
             )
-            ViewState.Success(uiState) as ViewState
         }
-            .catch { error -> emit(ViewState.Error(error.message.orEmpty())) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ViewState.Loading)
+            .catch { emit(UiState(isLoading = false, isLoadFailed = true, onboarding = onboarding)) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState())
 
     fun onNameChange(name: String) {
-        draft.update { it?.copy(name = name.takeCharacters(Oshi.MAX_NAME_LENGTH)) }
+        updateDraft { it.copy(name = name.takeCharacters(Oshi.MAX_NAME_LENGTH)) }
     }
 
     fun onColorSelect(color: OshiColorUiModel) {
-        draft.update { it?.copy(color = color) }
+        updateDraft { it.copy(color = color) }
     }
 
     /** Photo Picker で選んだ写真。取り込みは保存するときに行う。 */
     fun onPhotoPick(sourceUri: String) {
-        draft.update { it?.copy(photoChange = PhotoChange.Replace(sourceUri)) }
+        updateDraft { it.copy(photoChange = PhotoChange.Replace(sourceUri)) }
     }
 
     fun onPhotoRemove() {
-        draft.update { it?.copy(photoChange = PhotoChange.Remove) }
+        updateDraft { it.copy(photoChange = PhotoChange.Remove) }
     }
 
+    /** 保存してよいかは、公開の状態（`combine` を通って遅れて届く）ではなく、画面が持つ状態の今の値で決める。 */
     fun onSave() {
-        val currentDraft = draft.value ?: return
+        val screen = screenState.value
+        if (!screen.isLoaded || screen.isWriting || screen.isFinished) return
 
-        val uiState = (viewState.value as? ViewState.Success)?.uiState ?: return
+        if (Oshi.normalizeName(screen.draft.name).isEmpty()) return
 
-        if (!uiState.canSave) return
-
-        // 公開している状態は combine を通って遅れて届くので、二重に保存しないよう元の値で確かめる
-        if (busy.value || finished.value) return
-
-        busy.value = true
+        screenState.update { it.copy(isWriting = true) }
         viewModelScope.launch {
             try {
                 saveOshi(
-                    current = original,
-                    name = currentDraft.name,
-                    color = currentDraft.color.toModel(),
-                    photoChange = currentDraft.photoChange,
+                    current = screen.original,
+                    name = screen.draft.name,
+                    color = screen.draft.color.toModel(),
+                    photoChange = screen.draft.photoChange,
                     now = clock.instant(),
                 )
-                finished.value = true
+                screenState.update { it.copy(isWriting = false, isFinished = true) }
             } catch (exception: IOException) {
-                writeFailure.value = WriteFailureUiModel.SAVE
-                busy.value = false
+                screenState.update { it.copy(isWriting = false, writeFailure = WriteFailureUiModel.SAVE) }
             }
         }
     }
 
     /** 推しと、結び付いた予定と写真を削除する。登録前（新しい推し）は何もしない。 */
     fun onDelete() {
-        val editing = original ?: return
+        val screen = screenState.value
+        val editing = screen.original ?: return
 
-        if (busy.value || finished.value) return
+        if (screen.isWriting || screen.isFinished) return
 
-        busy.value = true
+        screenState.update { it.copy(isWriting = true) }
         viewModelScope.launch {
             try {
                 deleteOshi(editing)
-                finished.value = true
+                screenState.update { it.copy(isWriting = false, isFinished = true) }
             } catch (exception: IOException) {
-                writeFailure.value = WriteFailureUiModel.DELETE
-                busy.value = false
+                screenState.update { it.copy(isWriting = false, writeFailure = WriteFailureUiModel.DELETE) }
             }
         }
     }
 
     fun onWriteFailureShown() {
-        writeFailure.value = null
+        screenState.update { it.copy(writeFailure = null) }
+    }
+
+    private fun updateDraft(change: (Draft) -> Draft) {
+        screenState.update { it.copy(draft = change(it.draft)) }
     }
 }

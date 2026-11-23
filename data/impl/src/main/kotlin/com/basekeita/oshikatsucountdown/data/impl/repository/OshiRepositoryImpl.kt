@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 
-internal class OshiRepositoryImpl
-@Inject
-constructor(
+internal class OshiRepositoryImpl @Inject constructor(
     private val localDataSource: OshiLocalDataSource,
 ) : OshiRepository {
     override val oshis: Flow<List<Oshi>> =
         localDataSource.oshis.map { entities -> entities.map { oshi -> oshi.toModel() } }
+
+    override suspend fun readOshis(): List<Oshi> = localDataSource.readOshis().map { oshi -> oshi.toModel() }
 
     override suspend fun save(oshi: Oshi) {
         localDataSource.upsertOshi(oshi.toEntity())

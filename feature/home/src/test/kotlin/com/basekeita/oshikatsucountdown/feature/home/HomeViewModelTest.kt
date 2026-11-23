@@ -4,6 +4,7 @@ import com.basekeita.oshikatsucountdown.data.definition.model.EventType
 import com.basekeita.oshikatsucountdown.data.definition.model.Oshi
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiColor
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiEvent
+import com.basekeita.oshikatsucountdown.data.definition.model.ReminderTiming
 import com.basekeita.oshikatsucountdown.data.definition.model.UserSettings
 import com.basekeita.oshikatsucountdown.data.definition.repository.EventRepository
 import com.basekeita.oshikatsucountdown.data.definition.repository.OshiRepository
@@ -30,6 +31,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.util.UUID
 
@@ -89,6 +91,17 @@ class HomeViewModelTest {
         }
 
         override suspend fun setOnboardingCompleted(completed: Boolean) = Unit
+
+        override suspend fun setRemindersEnabled(enabled: Boolean) = Unit
+
+        override suspend fun setReminderTimingEnabled(
+            timing: ReminderTiming,
+            enabled: Boolean,
+        ) = Unit
+
+        override suspend fun setReminderTimeOfDay(time: LocalTime) = Unit
+
+        override suspend fun setNotificationPermissionRequested(requested: Boolean) = Unit
     }
 
     private val lumina = Oshi(name = "LUMINA", color = OshiColor.PINK, createdAt = Instant.EPOCH)
