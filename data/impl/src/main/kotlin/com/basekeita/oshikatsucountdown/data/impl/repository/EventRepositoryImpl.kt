@@ -10,9 +10,7 @@ import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 
-internal class EventRepositoryImpl
-@Inject
-constructor(
+internal class EventRepositoryImpl @Inject constructor(
     private val localDataSource: EventLocalDataSource,
 ) : EventRepository {
     override val events: Flow<List<OshiEvent>> =

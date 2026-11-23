@@ -10,9 +10,7 @@ import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 
-internal class OshiRepositoryImpl
-@Inject
-constructor(
+internal class OshiRepositoryImpl @Inject constructor(
     private val localDataSource: OshiLocalDataSource,
 ) : OshiRepository {
     override val oshis: Flow<List<Oshi>> =

@@ -23,9 +23,7 @@ import javax.inject.Inject
  * 起動画面は導線を出すかどうかが読めるまで出しておく（読む前に導線やタブを一瞬出さないため）ので、画面の購読を待たずに読み始める。
  */
 @HiltViewModel
-class MainViewModel
-@Inject
-constructor(
+class MainViewModel @Inject constructor(
     private val userSettingsRepository: UserSettingsRepository,
 ) : ViewModel() {
     sealed interface ViewState {

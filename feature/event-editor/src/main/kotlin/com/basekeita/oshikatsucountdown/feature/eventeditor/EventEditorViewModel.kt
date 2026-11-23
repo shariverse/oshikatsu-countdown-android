@@ -41,9 +41,7 @@ import java.util.UUID
  * 保存し終えると `isFinished` を立て、画面はそれを見て閉じる（先に閉じると `viewModelScope` が止まり、書き込みが途中で切れるため）。
  */
 @HiltViewModel(assistedFactory = EventEditorViewModel.Factory::class)
-class EventEditorViewModel
-@AssistedInject
-constructor(
+class EventEditorViewModel @AssistedInject constructor(
     @Assisted private val eventId: String?,
     @Assisted private val onboarding: Boolean,
     private val eventRepository: EventRepository,

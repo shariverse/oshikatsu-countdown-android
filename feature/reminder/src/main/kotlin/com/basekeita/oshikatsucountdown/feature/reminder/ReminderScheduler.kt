@@ -37,9 +37,7 @@ internal const val EXTRA_FIRE_AT = "com.basekeita.oshikatsucountdown.feature.rem
  * - 通知を出せない（許可が無い・端末の設定で OFF）ときは予約を残さない
  */
 @Singleton
-class ReminderScheduler
-@Inject
-internal constructor(
+class ReminderScheduler @Inject internal constructor(
     @param:ApplicationContext private val context: Context,
     private val eventRepository: EventRepository,
     private val userSettingsRepository: UserSettingsRepository,

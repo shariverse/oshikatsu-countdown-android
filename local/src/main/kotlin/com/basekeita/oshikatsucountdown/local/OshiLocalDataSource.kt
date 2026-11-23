@@ -9,9 +9,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 /** 推しの読み書き（Room の `oshis`）。 */
-class OshiLocalDataSource
-@Inject
-constructor(
+class OshiLocalDataSource @Inject constructor(
     private val oshiDao: OshiDao,
 ) {
     /** 登録した順。読めないときは空。 */

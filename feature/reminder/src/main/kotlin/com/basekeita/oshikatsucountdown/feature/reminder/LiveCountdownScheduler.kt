@@ -41,9 +41,7 @@ private const val ACTION_COUNTDOWN_ALARM = "com.basekeita.oshikatsucountdown.fea
  * 予定の通知と同じきっかけで置き直す（`ReminderSync`）。
  */
 @Singleton
-class LiveCountdownScheduler
-@Inject
-internal constructor(
+class LiveCountdownScheduler @Inject internal constructor(
     @param:ApplicationContext private val context: Context,
     private val eventRepository: EventRepository,
     private val oshiRepository: OshiRepository,

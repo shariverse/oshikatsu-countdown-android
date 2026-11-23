@@ -30,9 +30,7 @@ import javax.inject.Inject
  * 通知の許可の状態は端末から読むので、画面が前面に来るたびに `onNotificationPermissionCheck` で渡してもらう。
  */
 @HiltViewModel
-class SettingsViewModel
-@Inject
-constructor(
+class SettingsViewModel @Inject constructor(
     private val userSettingsRepository: UserSettingsRepository,
     @param:AppVersionName private val appVersionName: String,
 ) : ViewModel() {

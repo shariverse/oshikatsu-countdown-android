@@ -48,9 +48,7 @@ data class LiveCountdownPlan(
  * - 開演の 3 時間前から、開演の 1 時間後まで出す
  * - 予約するのは `SCHEDULING_HORIZON` の先までに始まる、近い順に `MAXIMUM_SCHEDULED_COUNT` 件まで
  */
-class PlanLiveCountdownsUseCase
-@Inject
-constructor() {
+class PlanLiveCountdownsUseCase @Inject constructor() {
     operator fun invoke(
         events: List<OshiEvent>,
         now: Instant,

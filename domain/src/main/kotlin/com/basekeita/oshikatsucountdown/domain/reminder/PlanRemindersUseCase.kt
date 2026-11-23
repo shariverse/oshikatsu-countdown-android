@@ -43,9 +43,7 @@ data class PlannedReminder(
  * - 毎年くり返す予定は、次の回とその次の回まで計画する（当日を過ぎてアプリを開かなくても、翌年の分が予約に残るように）
  * - 近い順に `limit` 件まで
  */
-class PlanRemindersUseCase
-@Inject
-constructor() {
+class PlanRemindersUseCase @Inject constructor() {
     operator fun invoke(
         events: List<OshiEvent>,
         settings: ReminderSettings,

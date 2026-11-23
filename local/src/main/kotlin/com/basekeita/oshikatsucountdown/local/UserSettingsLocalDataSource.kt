@@ -18,9 +18,7 @@ import javax.inject.Inject
  * 設定の読み書き（DataStore（Preferences）、`oshikatsu_prefs`）。
  * 値が無い・読めないときは `null` を流し、既定値は呼ぶ側（data:impl）で決める。
  */
-class UserSettingsLocalDataSource
-@Inject
-constructor(
+class UserSettingsLocalDataSource @Inject constructor(
     private val dataStore: DataStore<Preferences>,
 ) {
     private val preferences: Flow<Preferences> =

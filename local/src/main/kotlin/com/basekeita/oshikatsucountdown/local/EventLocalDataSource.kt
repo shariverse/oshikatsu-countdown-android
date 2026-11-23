@@ -9,9 +9,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 /** 予定の読み書き（Room の `events`）。 */
-class EventLocalDataSource
-@Inject
-constructor(
+class EventLocalDataSource @Inject constructor(
     private val eventDao: EventDao,
 ) {
     /** 登録した順。読めないときは空。 */

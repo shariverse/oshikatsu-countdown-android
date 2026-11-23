@@ -35,9 +35,7 @@ import javax.inject.Singleton
  * - どちらも、日付が変わったとき（`ACTION_DATE_CHANGED`）に置き直す。iOS 版（`significantTimeChange`）と同じく、アプリのプロセスが動いている間だけ受ける
  */
 @Singleton
-class ReminderSync
-@Inject
-internal constructor(
+class ReminderSync @Inject internal constructor(
     @param:ApplicationContext private val context: Context,
     private val eventRepository: EventRepository,
     private val userSettingsRepository: UserSettingsRepository,

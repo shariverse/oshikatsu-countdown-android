@@ -37,9 +37,7 @@ import java.time.Clock
  * 保存・削除し終えると `isFinished` を立て、画面はそれを見て閉じる（先に閉じると `viewModelScope` が止まり、書き込みが途中で切れるため）。
  */
 @HiltViewModel(assistedFactory = OshiEditorViewModel.Factory::class)
-class OshiEditorViewModel
-@AssistedInject
-constructor(
+class OshiEditorViewModel @AssistedInject constructor(
     @Assisted private val oshiId: String?,
     @Assisted private val onboarding: Boolean,
     oshiRepository: OshiRepository,

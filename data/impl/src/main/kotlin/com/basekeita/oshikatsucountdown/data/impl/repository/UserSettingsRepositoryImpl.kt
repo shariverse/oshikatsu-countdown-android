@@ -13,9 +13,7 @@ import kotlinx.coroutines.flow.combine
 import java.time.LocalTime
 import javax.inject.Inject
 
-internal class UserSettingsRepositoryImpl
-@Inject
-constructor(
+internal class UserSettingsRepositoryImpl @Inject constructor(
     private val localDataSource: UserSettingsLocalDataSource,
 ) : UserSettingsRepository {
     private val reminders =
