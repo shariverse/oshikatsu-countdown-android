@@ -9,7 +9,6 @@ import androidx.core.content.ContextCompat
 import com.basekeita.oshikatsucountdown.data.definition.repository.EventRepository
 import com.basekeita.oshikatsucountdown.data.definition.repository.OshiRepository
 import com.basekeita.oshikatsucountdown.data.definition.repository.UserSettingsRepository
-import com.basekeita.oshikatsucountdown.domain.reminder.PlanRemindersUseCase
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,7 +21,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -102,20 +100,14 @@ class ReminderSync @Inject internal constructor(
     }
 }
 
-/** BroadcastReceiver は Hilt が作らないので、使うものはここから受け取る。 */
+/**
+ * BroadcastReceiver は Hilt が作らないので、使うものはここから受け取る。
+ * Receiver は手順を持たず、手順をまとめたクラス（出す・置き直す）だけを受け取る。
+ */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 internal interface ReminderEntryPoint {
-    fun eventRepository(): EventRepository
-
-    fun oshiRepository(): OshiRepository
-
-    fun userSettingsRepository(): UserSettingsRepository
-
-    fun planReminders(): PlanRemindersUseCase
-
-    /** 端末のタイムゾーンを読み直すため、呼ぶたびに作られる。 */
-    fun clock(): Clock
+    fun reminderPoster(): ReminderPoster
 
     fun liveCountdownScheduler(): LiveCountdownScheduler
 

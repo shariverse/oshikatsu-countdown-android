@@ -3,22 +3,16 @@ package com.basekeita.oshikatsucountdown.feature.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.basekeita.oshikatsucountdown.data.definition.model.ReminderTiming
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
-/**
- * 予約した時刻に通知を出し、空いた枠を埋めるために予約し直す。
- * 文面は出すときに読み直す（予約の後に推しの名前を変えても、今の名前で出す）。
- * 当日のカウントダウンも置き直す（8 日先までしか予約しないので、7 日前・前日の通知のときに、アプリを開かなくても先の予約を足す）。
- */
+/** 予約した時刻に、予定の通知を出す（`ReminderPoster`）。 */
 class ReminderAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(
         context: Context,
@@ -26,36 +20,33 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
     ) {
         if (intent.action != ACTION_FIRE_REMINDER) return
 
-        val identifier = intent.getStringExtra(EXTRA_IDENTIFIER) ?: return
-        val eventId = intent.getStringExtra(EXTRA_EVENT_ID)?.let(UUID::fromString) ?: return
-        val timing = intent.getStringExtra(EXTRA_TIMING)?.let { name -> ReminderTiming.entries.firstOrNull { it.name == name } } ?: return
-        val occurrenceDate = intent.getStringExtra(EXTRA_OCCURRENCE_DATE)?.let(LocalDate::parse) ?: return
-        val fireAt = intent.getLongExtra(EXTRA_FIRE_AT, -1L).takeIf { it >= 0 }?.let(Instant::ofEpochMilli) ?: return
+        val fired = intent.toFiredReminder() ?: return
 
-        val entryPoint = EntryPointAccessors.fromApplication<ReminderEntryPoint>(context)
+        val poster = EntryPointAccessors.fromApplication<ReminderEntryPoint>(context).reminderPoster()
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                val settings = entryPoint.userSettingsRepository().readReminderSettings()
-                val event = entryPoint.eventRepository().readEvents().firstOrNull { it.id == eventId }
-                val zone = entryPoint.clock().zone
-                if (isReminderStillPlanned(entryPoint.planReminders(), event, settings, identifier, fireAt, zone) && event != null) {
-                    val oshiName = event.oshiId?.let { oshiId -> entryPoint.oshiRepository().readOshis().firstOrNull { it.id == oshiId }?.name }
-                    val content = reminderContentOf(timing, occurrenceDate, event, oshiName, ResourceReminderWording(context))
-                    postReminderNotification(context, identifier, eventId, content)
-                }
-                entryPoint.reminderSync().refreshAll()
-            } catch (exception: IOException) {
-                Log.w(TAG, "通知を出せませんでした", exception)
+                poster.post(fired)
             } finally {
                 pendingResult.finish()
             }
         }
     }
+}
 
-    private companion object {
-        const val TAG = "ReminderAlarmReceiver"
-    }
+/** アラームの extra から、届いた予定の通知を読む。どれかが欠けていれば（版が変わって読めないなど）null。 */
+private fun Intent.toFiredReminder(): FiredReminder? {
+    val identifier = getStringExtra(EXTRA_IDENTIFIER) ?: return null
+
+    val eventId = getStringExtra(EXTRA_EVENT_ID)?.let(UUID::fromString) ?: return null
+
+    val timing = getStringExtra(EXTRA_TIMING)?.let { name -> ReminderTiming.entries.firstOrNull { it.name == name } } ?: return null
+
+    val occurrenceDate = getStringExtra(EXTRA_OCCURRENCE_DATE)?.let(LocalDate::parse) ?: return null
+
+    val fireAt = getLongExtra(EXTRA_FIRE_AT, -1L).takeIf { it >= 0 }?.let(Instant::ofEpochMilli) ?: return null
+
+    return FiredReminder(identifier, eventId, timing, occurrenceDate, fireAt)
 }
 
 /**
