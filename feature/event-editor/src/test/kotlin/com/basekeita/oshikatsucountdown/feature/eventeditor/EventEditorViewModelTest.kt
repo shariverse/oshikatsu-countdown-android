@@ -7,12 +7,15 @@ import com.basekeita.oshikatsucountdown.data.definition.model.OshiEvent
 import com.basekeita.oshikatsucountdown.data.definition.repository.EventRepository
 import com.basekeita.oshikatsucountdown.data.definition.repository.OshiRepository
 import com.basekeita.oshikatsucountdown.feature.eventeditor.EventEditorViewModel.UiState
-import com.basekeita.oshikatsucountdown.feature.eventeditor.EventEditorViewModel.ViewState
+import com.basekeita.oshikatsucountdown.feature.eventeditor.uimodel.EventDraftUiModel
+import com.basekeita.oshikatsucountdown.feature.eventeditor.uimodel.withExistingOshi
+import com.basekeita.oshikatsucountdown.feature.eventeditor.uimodel.withType
 import com.basekeita.oshikatsucountdown.ui.uimodel.EventTypeUiModel
 import com.basekeita.oshikatsucountdown.ui.uimodel.WriteFailureUiModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -93,9 +96,46 @@ class EventEditorViewModelTest {
 
     /** `WhileSubscribed` の状態を購読しておき、いまの UiState を読めるようにする。 */
     private fun TestScope.observe(viewModel: EventEditorViewModel): () -> UiState {
-        backgroundScope.launch { viewModel.viewState.collect {} }
+        backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
-        return { (viewModel.viewState.value as ViewState.Success).uiState }
+        return { viewModel.uiState.value }
+    }
+
+    @Test
+    fun `購読するまでは読み込み中で、保存も閉じるのもできる状態を出さない`() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+
+        assertEquals(UiState(), viewModel.uiState.value)
+        assertEquals(false, viewModel.uiState.value.canSave)
+    }
+
+    @Test
+    fun `開いた予定や推しを読めなければ、読めなかったことを出す`() = runTest(mainDispatcherRule.dispatcher) {
+        val failingOshiRepository = object : OshiRepository by FakeOshiRepository(emptyList()) {
+            override val oshis = flow<List<Oshi>> { throw IllegalStateException("読めません") }
+        }
+
+        val uiState = observe(createViewModel(oshiRepository = failingOshiRepository))
+
+        assertEquals(true, uiState().isLoadFailed)
+        assertEquals(false, uiState().canSave)
+    }
+
+    @Test
+    fun `誕生日を選ぶと毎年くり返し、ほかの種類はくり返さない`() {
+        val draft = EventDraftUiModel(repeatsYearly = false)
+
+        assertEquals(true, draft.withType(EventTypeUiModel.BIRTHDAY).repeatsYearly)
+        assertEquals(false, draft.withType(EventTypeUiModel.BIRTHDAY).withType(EventTypeUiModel.RELEASE).repeatsYearly)
+    }
+
+    @Test
+    fun `選んでいた推しが消えていたら推しなしにし、残っていればそのまま`() {
+        val draft = EventDraftUiModel(oshiId = "a-oshi")
+
+        assertEquals(null, draft.withExistingOshi(setOf("another-oshi")).oshiId)
+        assertEquals("a-oshi", draft.withExistingOshi(setOf("a-oshi")).oshiId)
+        assertEquals(null, EventDraftUiModel(oshiId = null).withExistingOshi(emptySet()).oshiId)
     }
 
     @Test

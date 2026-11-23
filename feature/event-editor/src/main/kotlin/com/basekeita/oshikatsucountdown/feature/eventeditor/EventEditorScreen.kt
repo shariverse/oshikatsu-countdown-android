@@ -65,7 +65,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.basekeita.oshikatsucountdown.feature.eventeditor.EventEditorViewModel.UiState
-import com.basekeita.oshikatsucountdown.feature.eventeditor.EventEditorViewModel.ViewState
 import com.basekeita.oshikatsucountdown.feature.eventeditor.uimodel.EventDraftUiModel
 import com.basekeita.oshikatsucountdown.ui.component.atoms.OshiAvatar
 import com.basekeita.oshikatsucountdown.ui.component.molecules.WriteFailureSnackbar
@@ -97,41 +96,34 @@ internal fun EventEditorScreen(
         creationCallback = { factory -> factory.create(eventId, onboarding) },
     ),
 ) {
-    val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val finish = { onNavigationEvent(EventEditorNavigationEvent.Finished) }
 
-    val isFinished = (viewState as? ViewState.Success)?.uiState?.isFinished == true
-    LaunchedEffect(isFinished) {
-        if (isFinished) onNavigationEvent(EventEditorNavigationEvent.Saved)
+    LaunchedEffect(uiState.isFinished) {
+        if (uiState.isFinished) onNavigationEvent(EventEditorNavigationEvent.Saved)
     }
 
-    when (val state = viewState) {
-        ViewState.Loading -> Unit
-
-        is ViewState.Error -> {
-            Text(
-                text = stringResource(UiR.string.load_error),
-                style = MaterialTheme.typography.bodyLarge,
-                color = OshikatsuTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
-        }
-
-        is ViewState.Success -> {
-            EventEditorContent(
-                uiState = state.uiState,
-                onClose = finish,
-                onSave = viewModel::onSave,
-                onOshiSelect = viewModel::onOshiSelect,
-                onTypeSelect = viewModel::onTypeSelect,
-                onTitleChange = viewModel::onTitleChange,
-                onDateChange = viewModel::onDateChange,
-                onStartTimeChange = viewModel::onStartTimeChange,
-                onVenueChange = viewModel::onVenueChange,
-                onRepeatsYearlyChange = viewModel::onRepeatsYearlyChange,
-                onWriteFailureShown = viewModel::onWriteFailureShown,
-            )
-        }
+    if (uiState.isLoadFailed) {
+        Text(
+            text = stringResource(UiR.string.load_error),
+            style = MaterialTheme.typography.bodyLarge,
+            color = OshikatsuTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(24.dp),
+        )
+    } else if (!uiState.isLoading) {
+        EventEditorContent(
+            uiState = uiState,
+            onClose = finish,
+            onSave = viewModel::onSave,
+            onOshiSelect = viewModel::onOshiSelect,
+            onTypeSelect = viewModel::onTypeSelect,
+            onTitleChange = viewModel::onTitleChange,
+            onDateChange = viewModel::onDateChange,
+            onStartTimeChange = viewModel::onStartTimeChange,
+            onVenueChange = viewModel::onVenueChange,
+            onRepeatsYearlyChange = viewModel::onRepeatsYearlyChange,
+            onWriteFailureShown = viewModel::onWriteFailureShown,
+        )
     }
 }
 
@@ -534,6 +526,7 @@ private fun EventEditorContentPreview() {
     OshikatsuTheme {
         EventEditorContent(
             uiState = UiState(
+                isLoading = false,
                 draft = EventDraftUiModel(
                     oshiId = "l",
                     type = EventTypeUiModel.LIVE,
@@ -549,10 +542,6 @@ private fun EventEditorContentPreview() {
                 ),
                 isNew = true,
                 onboarding = false,
-                canSave = true,
-                canClose = true,
-                isFinished = false,
-                writeFailure = null,
             ),
             onClose = {},
             onSave = {},
