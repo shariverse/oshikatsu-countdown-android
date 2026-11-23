@@ -147,7 +147,9 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
   - `PlanRemindersUseCase`: どの予定に、いつ通知を出すか（`PlannedReminder`）。規則は SPEC の「3. 規則」の通知の行。iOS 版の `ReminderPlan` を移したもの。
     近い順に 64 件（`MAXIMUM_COUNT`。iOS 版とそろえる）。識別子（`identifier`）は予定・回・タイミングで決まり、予約し直しても変わらない
   - `PlanLiveCountdownsUseCase`: 当日のカウントダウンをどの予定に、いつ出すか（`LiveCountdownPlan` の `current`・`scheduled`）。iOS 版の `LiveActivityPlan` を移したもの
-- 時刻は引数で受ける（`today: LocalDate`、`now: Instant` と `zone: ZoneId`）。「今」を読むのは ViewModel
+- 時刻は引数で受ける（`today: LocalDate`、`now: Instant` と `zone: ZoneId`）。「今」を読むのは ViewModel。
+  画面の無いところで動くもの（通知の予約の `ReminderScheduler`・`LiveCountdownScheduler`・`ReminderPoster`、ウィジェット）は ViewModel を持たないので、
+  それぞれが `Provider<Clock>`（端末のタイムゾーンを読み直すため、呼ぶたびに作る）から読み、domain には引数で渡す
 
 ### local
 
@@ -164,6 +166,8 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
     データベースの失敗（`SQLException`）は、読み込みなら空を流し、書き込みなら `IOException` にして投げる（ViewModel が受ける書き込みの失敗にそろえる）
 - 設定（`showPastEvents` / `onboardingCompleted`）は DataStore（Preferences、`oshikatsu_prefs`）の Boolean のキーに置く（`UserSettingsLocalDataSource`）。
   通知の設定は `remindersEnabled`、タイミングごとの `reminderTiming.<キー>`、時刻は 0:00 からの分（`reminderMinutesOfDay`）、許可を求めた印は `notificationPermissionRequested`
+- 保存の DataStore は local に置く。例外は通知の予約の記録（feature/reminder の `ReminderAlarmStore`、`reminder_alarms`）で、
+  中身が AlarmManager の PendingIntent の識別子という予約の都合の値なので、local・data に出すとデータ層が AlarmManager のことを知ってしまう。そのため feature に閉じる
 - `PhotoLocalDataSource`: Photo Picker の URI を `ImageDecoder` で読み、長辺 1440px 以下の JPEG にして `files/oshi_photos/` に書く。書き出しに失敗したら書きかけのファイルを消して `null`。消すのはその中のファイルだけ
 - 推し・写真・予定は端末の外に出さない。自動バックアップは `allowBackup="false"` で切り、
   それだけでは止まらない機種がある Android 12 以降の端末間の移行も `data_extraction_rules.xml` で全部除く
@@ -187,6 +191,9 @@ Lint の「新しい版がある」の警告はこの制約によるもの。
   `WriteFailureSnackbar`（書き込みの失敗を Snackbar で知らせる）
 - `photo/`: `rememberPhotoBitmap`（取り込んだ写真のパスか `content://` の URI を、表示の大きさに縮めて読む）
 - `rule/`: 日付・時刻の書き方（`10月18日(日)`、`10.18 SUN`、`17:00` など）
+- `NotificationAccess.kt`: 通知を出せるか（`canPostNotifications`・`canScheduleExactAlarms`）。端末の状態を読む関数で、UI の部品ではないが、
+  feature/reminder（出すか）と feature/settings（案内）が同じ判定を使い、feature どうしは依存できないので、今は両方が依存する ui に置く。
+  端末の機能の判定がもっと増えたら、それだけのモジュールに分ける
 
 ### feature/*
 
@@ -267,8 +274,10 @@ feature/reminder/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/remind
   ReminderScheduler.kt       予定の通知の計画のとおりに AlarmManager のアラームを置き換える
   LiveCountdownScheduler.kt  当日のカウントダウンを出す・予約する・消す。そのアラームの Receiver
   LiveCountdownAlarms.kt     当日のカウントダウンの入れるアラームと、知らせるかの判断（純粋な関数）
-  LiveCountdownContent.kt    当日のカウントダウンの中身
-  ReminderReceivers.kt       予約した時刻に通知を出す Receiver と、再起動・更新・時刻・タイムゾーン・正確なアラームの許可の Receiver
+  LiveCountdownContent.kt    当日のカウントダウンの中身と、標準の通知の枠への置き方（`slotsAt`。純粋な関数）
+  RecordReplacement.kt       予約の記録の置き換え方（足す前の記録・取り消すもの・終えた後の記録。純粋な関数）
+  ReminderPoster.kt          届いた予定の通知を出し、置き直す（Receiver から呼ぶ手順をまとめたもの）
+  ReminderReceivers.kt       予約した時刻の Receiver と、システムから届くきっかけ（`REMINDER_SYSTEM_ACTIONS`）の Receiver
   ReminderFiring.kt          届いた予約をまだ出すかの判断（純粋な関数）
   ReminderNotifications.kt   チャンネル・通知を出す・通知を出せるか
   ExactAlarms.kt             正確なアラームを入れる
@@ -277,7 +286,11 @@ feature/reminder/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/remind
   ReminderSync.kt            チャンネルを作り、予定・推し・通知の設定の変更で置き直す。Receiver が使う EntryPoint
 ```
 
-通知を出せるか（`canPostNotifications`・`canScheduleExactAlarms`）は、reminder（出すか）と settings（案内）が同じ判定を使うので `ui` の `NotificationAccess.kt` に置く。
+- 画面を持たないが、Repository の interface と UseCase だけを使い、app 以外から見えないので、feature の依存の規則に合う（ウィジェットと同じ）。
+  convention plugin は feature と同じ `oshikatsu.feature`（Compose を使うのは推し色の `toArgb` だけ）
+- BroadcastReceiver は Hilt が作らないので `ReminderEntryPoint` から受け取る。Receiver は手順を持たず、手順をまとめたクラス
+  （`ReminderPoster`・`LiveCountdownScheduler`・`ReminderSync`）だけを受け取る（Repository や UseCase を Receiver に見せない）
+- 通知を出せるかの判定は `ui` の `NotificationAccess.kt`（[ui](#ui共通-ui)）
 
 - 決めた時刻ちょうどに出す（iOS 版は日付と時刻を指定して予約する）ので、アラームは正確なアラーム `setExactAndAllowWhileIdle`（`RTC_WAKEUP`。端末の待機中も動く）。
   権限は Android 13 以降が `USE_EXACT_ALARM`（インストールのときに許可される。Google Play のポリシーで、イベントの通知を出すカレンダーのアプリなどに限られる）、
@@ -285,7 +298,7 @@ feature/reminder/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/remind
   正確なアラームを使えるか（`canScheduleExactAlarms`）も「通知を出せる」に入れ（`areReminderNotificationsAllowed`）、使えなければ予約を残さない
 - アラームは UTC の時点で入るので、タイムゾーンが変わったら計画し直して、その土地の同じ日付・時刻に出す
 - AlarmManager は予約したアラームを読み出せないので、予約した識別子を `ReminderAlarmStore` に持ち、計画から外れたものを取り消す。
-  途中で止まっても（プロセスが死ぬ・scope が取り消される）後で取り消せるよう、足す前に「前の記録と今回のもの」を書き、終えてから今回のものだけにする。
+  途中で止まっても（プロセスが死ぬ・scope が取り消される）後で取り消せるよう、足す前に「前の記録と今回のもの」を書き、終えてから今回のものだけにする（`recordReplacement`）。
   中身は作り直せる値なので、ファイルが壊れたら空にして読む（`ReplaceFileCorruptionHandler`）
 - PendingIntent は識別子を data に入れて通知ごとに分ける（アラームは `oshikatsu-reminder:<識別子>`・`oshikatsu-countdown:<キー>`、押したときに開くのは `oshikatsu-notification:<識別子>`）。request code は 0
 - 予約した時刻に届いたら、出す直前の時点の計画に同じ識別子・時刻の通知があるときだけ出す（`isReminderStillPlanned`。予約し直しが間に合わなかった古い予約を出さない）
@@ -302,14 +315,18 @@ feature/reminder/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/remind
   重要度とバイブはチャンネルを作った後には変えられない（重要度は下げることだけできる）ので、変えるときは id を変えるか、入れ直す
 - 当日のカウントダウン（`LiveCountdownScheduler`）
   - 時間帯に入っている予定は、出し続ける通知（`setOngoing`）で出す。開演までの残りは通知の時計（`setUsesChronometer`・`setChronometerCountDown`）で端末が数える。
-    時計は見出しの行の末尾に出て、そのすぐ前がサブテキストなので、残りの見出し（`開演まで`）はサブテキストに入れ、推しの名前と開始の時刻は本文に出す
+    時計は見出しの行の末尾に出て、そのすぐ前がサブテキストなので、残りの見出し（`開演まで`）はサブテキストに入れ、推しの名前と開始の時刻は本文に出す（`slotsAt`）
   - 出し始める時刻・開演・開演の 1 時間後に正確なアラームを入れ（`countdownAlarmsOf`）、アラームで置き直す。開演を過ぎたら中身を「今日は当日！」に変え、1 時間後に消す（`setTimeoutAfter` も付ける）
   - 知らせる（`setSilent` を外す）のは、前の記録に出し始める時刻のアラームがあり、まだ出していないものだけ（`countdownsToAlert`）。どのきっかけの置き直しが先に通っても 1 回だけ鳴る
     （アラームでプロセスが起きると、`ReminderSync` の最初の値の置き直しと Receiver の置き直しが同じ `Mutex` を取り合うため、呼ばれた経路では決めない）。`setOnlyAlertOnce` で出し直しでは鳴らさない
   - 出している識別子を `ReminderAlarmStore` に持ち、計画から外れたものを消す。中身は置き直すたびに出し直す（同じタグで置き換わる）
   - チャンネルは `live_countdown`（設定の「予定を通知する」とは別。利用者は端末の設定でこのチャンネルを切り替える）。出し続ける通知なのでバッジは付けない（`setShowBadge(false)`）
   - 置き直すきっかけ: 予定・推しの変更（`ReminderSync`）、前面に来たとき、システムからのきっかけ（予定の通知と同じ）
-- 予定を保存した直後の許可は app が求める（予定の入力画面は `EventEditorNavigationEvent.Saved` を返す）。まだ一度も求めていないとき（`MainViewModel` の `asksNotificationPermissionOnSave`）だけ。当日のカウントダウンにも同じ許可が要るので、「予定を通知する」が OFF でも求める
+- 予定を保存した直後の許可は app が求める（予定の入力画面は `EventEditorNavigationEvent.Saved` を返す）。
+  `MainActivity` は端末の状態（許可のダイアログを出せる版か・もう許可されているか）を読んで `MainViewModel.onEventSave` に渡すだけで、求めるかは ViewModel が決める
+  （`asksNotificationPermissionOnSave`。純粋な関数。まだ許可されておらず、まだ一度も求めておらず、いま求めている途中でもないとき）。
+  設定の画面と同じく、ViewModel が UiState の `isRequestingNotificationPermission` を立て、`MainActivity` がダイアログを出し、閉じたら `onNotificationPermissionResult` で戻して印を残す。
+  当日のカウントダウンにも同じ許可が要るので、「予定を通知する」が OFF でも求める
 
 ### feature/widget
 
@@ -343,7 +360,7 @@ feature/widget/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/widget/
 ### app
 
 - `OshikatsuApplication`（`@HiltAndroidApp`。ウィジェットの `WidgetDataSync` と通知の `ReminderSync` を動かす）、`MainActivity`（`@AndroidEntryPoint`）、
-  `MainViewModel`（導線を出すかどうか。起動画面のために購読を待たずに読む。ウィジェットから開くように頼まれた画面 `launchRoute`）
+  `MainViewModel`（導線を出すかどうか。起動画面のために購読を待たずに読む。ウィジェットから開くように頼まれた画面 `launchRoute`。予定を保存した直後に通知の許可を求めるか）
 - `AppVersionModule`: 設定に出すバージョン（`BuildConfig.VERSION_NAME`）
 - `ClockModule`: `Clock.systemDefaultZone()`。シングルトンにせず、ViewModel を作るたびに端末のタイムゾーンで作り直す
 - タブごとに `rememberDecoratedNavEntries`（`SaveableStateHolder` と `ViewModelStore` の decorator）でエントリを作り、どのタブも毎回組み立てる
@@ -362,5 +379,7 @@ feature/widget/src/main/kotlin/com/basekeita/oshikatsucountdown/feature/widget/
 - 推し色のコントラスト（白い文字・ライトとダークの地）は `ui` の `OshiColorContrastTest` で確かめる
 - ウィジェットは、予定の並びからの変換（`WidgetMappingTest`）と予定を選ぶ画面の ViewModel を JVM で確かめる。Glance の描画はテストしない
 - 通知は、計画（`PlanRemindersUseCase`・`PlanLiveCountdownsUseCase`。iOS 版の `ReminderPlanTests`・`LiveActivityPlanTests` と同じ場面）と、文面と当日のカウントダウンの中身（`ReminderContentTest`。文言は固定の値で渡す）、
-  当日のカウントダウンのアラームと知らせるかの判断（`LiveCountdownAlarmsTest`）、届いた予約をまだ出すか（`ReminderFiringTest`）、保存の直後に許可を求めるか（app の `MainViewModelTest`）を JVM で確かめる。
+  当日のカウントダウンのアラームと知らせるかの判断（`LiveCountdownAlarmsTest`）、届いた予約をまだ出すか（`ReminderFiringTest`）、
+  予約の記録の置き換え方（`RecordReplacementTest`）、当日のカウントダウンの枠の置き方（`CountdownSlotsTest`）、
+  システムから届くきっかけとマニフェストの登録が同じか（`ReminderSystemActionsTest`）、保存の直後に許可を求めるか（app の `MainViewModelTest`）を JVM で確かめる。
   AlarmManager への予約と通知を出すところはテストしない（判断は純粋な関数に切り出してテストする）
