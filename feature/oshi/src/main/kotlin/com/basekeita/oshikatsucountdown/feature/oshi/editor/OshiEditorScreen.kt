@@ -73,7 +73,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.basekeita.oshikatsucountdown.feature.oshi.OshiEditorNavigationEvent
 import com.basekeita.oshikatsucountdown.feature.oshi.R
 import com.basekeita.oshikatsucountdown.feature.oshi.editor.OshiEditorViewModel.UiState
-import com.basekeita.oshikatsucountdown.feature.oshi.editor.OshiEditorViewModel.ViewState
 import com.basekeita.oshikatsucountdown.ui.component.molecules.OshiPhoto
 import com.basekeita.oshikatsucountdown.ui.component.molecules.WriteFailureSnackbar
 import com.basekeita.oshikatsucountdown.ui.theme.OshikatsuTheme
@@ -103,45 +102,38 @@ internal fun OshiEditorScreen(
         creationCallback = { factory -> factory.create(oshiId, onboarding) },
     ),
 ) {
-    val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val finish = { onNavigationEvent(OshiEditorNavigationEvent.Finished) }
 
-    val isFinished = (viewState as? ViewState.Success)?.uiState?.isFinished == true
-    LaunchedEffect(isFinished) {
-        if (isFinished) finish()
+    LaunchedEffect(uiState.isFinished) {
+        if (uiState.isFinished) finish()
     }
 
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) viewModel.onPhotoPick(uri.toString())
     }
 
-    when (val state = viewState) {
-        ViewState.Loading -> Unit
-
-        is ViewState.Error -> {
-            Text(
-                text = stringResource(UiR.string.load_error),
-                style = MaterialTheme.typography.bodyLarge,
-                color = OshikatsuTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
-        }
-
-        is ViewState.Success -> {
-            OshiEditorContent(
-                uiState = state.uiState,
-                onClose = finish,
-                onSave = viewModel::onSave,
-                onDelete = viewModel::onDelete,
-                onPickPhoto = {
-                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                },
-                onRemovePhoto = viewModel::onPhotoRemove,
-                onNameChange = viewModel::onNameChange,
-                onColorSelect = viewModel::onColorSelect,
-                onWriteFailureShown = viewModel::onWriteFailureShown,
-            )
-        }
+    if (uiState.isLoadFailed) {
+        Text(
+            text = stringResource(UiR.string.load_error),
+            style = MaterialTheme.typography.bodyLarge,
+            color = OshikatsuTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(24.dp),
+        )
+    } else if (!uiState.isLoading) {
+        OshiEditorContent(
+            uiState = uiState,
+            onClose = finish,
+            onSave = viewModel::onSave,
+            onDelete = viewModel::onDelete,
+            onPickPhoto = {
+                photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+            onRemovePhoto = viewModel::onPhotoRemove,
+            onNameChange = viewModel::onNameChange,
+            onColorSelect = viewModel::onColorSelect,
+            onWriteFailureShown = viewModel::onWriteFailureShown,
+        )
     }
 }
 
@@ -459,16 +451,13 @@ private fun OshiEditorContentPreview() {
     OshikatsuTheme {
         OshiEditorContent(
             uiState = UiState(
+                isLoading = false,
                 name = "LUMINA",
                 color = OshiColorUiModel.PINK,
                 photoSource = null,
                 isNew = true,
                 onboarding = true,
                 eventCount = 0,
-                canSave = true,
-                canClose = true,
-                isFinished = false,
-                writeFailure = null,
             ),
             onClose = {},
             onSave = {},

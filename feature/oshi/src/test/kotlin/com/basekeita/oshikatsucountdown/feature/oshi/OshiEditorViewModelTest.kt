@@ -4,14 +4,15 @@ import com.basekeita.oshikatsucountdown.data.definition.model.EventType
 import com.basekeita.oshikatsucountdown.data.definition.model.Oshi
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiColor
 import com.basekeita.oshikatsucountdown.data.definition.model.OshiEvent
+import com.basekeita.oshikatsucountdown.data.definition.repository.OshiRepository
 import com.basekeita.oshikatsucountdown.domain.oshi.DeleteOshiUseCase
 import com.basekeita.oshikatsucountdown.domain.oshi.SaveOshiUseCase
 import com.basekeita.oshikatsucountdown.feature.oshi.editor.OshiEditorViewModel
 import com.basekeita.oshikatsucountdown.feature.oshi.editor.OshiEditorViewModel.UiState
-import com.basekeita.oshikatsucountdown.feature.oshi.editor.OshiEditorViewModel.ViewState
 import com.basekeita.oshikatsucountdown.ui.uimodel.OshiColorUiModel
 import com.basekeita.oshikatsucountdown.ui.uimodel.WriteFailureUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -56,9 +57,39 @@ class OshiEditorViewModelTest {
 
     /** `WhileSubscribed` の状態を購読しておき、いまの UiState を読めるようにする。 */
     private fun TestScope.observe(viewModel: OshiEditorViewModel): () -> UiState {
-        backgroundScope.launch { viewModel.viewState.collect {} }
+        backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
-        return { (viewModel.viewState.value as ViewState.Success).uiState }
+        return { viewModel.uiState.value }
+    }
+
+    @Test
+    fun `購読するまでは読み込み中で、保存できる状態を出さない`() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = Fixture().createViewModel()
+
+        assertEquals(UiState(), viewModel.uiState.value)
+        assertEquals(false, viewModel.uiState.value.canSave)
+    }
+
+    @Test
+    fun `編集する推しを読めなければ、読めなかったことを出す`() = runTest(mainDispatcherRule.dispatcher) {
+        val fixture = Fixture(oshis = listOf(lumina))
+        val failingOshiRepository = object : OshiRepository by fixture.oshiRepository {
+            override val oshis = flow<List<Oshi>> { throw IllegalStateException("読めません") }
+        }
+        val viewModel = OshiEditorViewModel(
+            oshiId = lumina.id.toString(),
+            onboarding = false,
+            oshiRepository = failingOshiRepository,
+            eventRepository = fixture.eventRepository,
+            saveOshi = SaveOshiUseCase(failingOshiRepository, fixture.photoRepository),
+            deleteOshi = DeleteOshiUseCase(failingOshiRepository, fixture.photoRepository),
+            clock = Clock.fixed(Instant.parse("2026-11-08T10:00:00Z"), ZoneOffset.UTC),
+        )
+
+        val uiState = observe(viewModel)
+
+        assertEquals(true, uiState().isLoadFailed)
+        assertEquals(false, uiState().canSave)
     }
 
     @Test
