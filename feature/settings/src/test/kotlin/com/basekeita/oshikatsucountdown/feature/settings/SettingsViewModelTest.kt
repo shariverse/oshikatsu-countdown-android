@@ -51,7 +51,12 @@ class SettingsViewModelTest {
             enabled: Boolean,
         ) {
             val timings = state.value.reminders.timings
-            state.value = state.value.copy(reminders = state.value.reminders.copy(timings = if (enabled) timings + timing else timings - timing))
+            val updated = if (enabled) {
+                timings + timing
+            } else {
+                timings - timing
+            }
+            state.value = state.value.copy(reminders = state.value.reminders.copy(timings = updated))
         }
 
         override suspend fun setReminderTimeOfDay(time: LocalTime) {

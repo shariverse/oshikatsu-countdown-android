@@ -121,10 +121,15 @@ class LiveCountdownScheduler @Inject internal constructor(
         alert: Boolean,
     ) {
         val started = content.isStarted(now)
+        val subText = if (started) {
+            content.startedText
+        } else {
+            content.untilText
+        }
         val builder = NotificationCompat.Builder(context, COUNTDOWN_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(content.title)
-            .setSubText(if (started) content.startedText else content.untilText)
+            .setSubText(subText)
             .setContentText(context.getString(R.string.countdown_body, content.heading, content.startText))
             .setColor(content.color.color.toArgb())
             .setCategory(NotificationCompat.CATEGORY_EVENT)

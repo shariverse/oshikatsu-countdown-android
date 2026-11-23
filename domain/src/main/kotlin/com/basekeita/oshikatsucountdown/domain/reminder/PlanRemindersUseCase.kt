@@ -90,7 +90,11 @@ class PlanRemindersUseCase @Inject constructor() {
         val start = event.startTime?.let { occurrence.atTime(it).atZone(zone).toInstant() }
         val hourBeforeStart = start?.minus(HOUR_BEFORE_START)
         // 日付で決まる通知は、この時点より前に出るものだけ（開始の時刻が無ければ制限しない）
-        val deadline = if (ReminderTiming.HOUR_BEFORE_START in settings.timings) hourBeforeStart else start
+        val deadline = if (ReminderTiming.HOUR_BEFORE_START in settings.timings) {
+            hourBeforeStart
+        } else {
+            start
+        }
 
         return ReminderTiming.entries.filter { it in settings.timings }.mapNotNull { timing ->
             val daysBefore = timing.daysBefore
