@@ -110,10 +110,7 @@ class LiveCountdownScheduler @Inject internal constructor(
     /**
      * 出し続ける通知で出す。同じ識別子なら置き換わる（中身が変わったら出し直しになる）。
      * 知らせるのは始めるときの 1 回だけ（置き直しでは鳴らさない）。開演の 1 時間後に消えるよう、時間切れも付けておく。
-     *
-     * iOS 版は「開演まで」のすぐ下に残りを出し、組にして読ませる。標準の通知では、残り（時計）は見出しの行の末尾に出て、
-     * そのすぐ前がサブテキストになる（`ライブ · 開演まで · 2:59:17`）。そのため「開演まで」はサブテキストに入れ、
-     * 推しの名前と開始の時刻は本文に出す（`テイルズ · 開演 17:00`）。開演を過ぎたら、サブテキストを「今日は当日！」にして時計を消す。
+     * どの枠に何を置くかは `slotsAt` で決める。
      */
     private fun postCountdown(
         identifier: String,
@@ -121,33 +118,28 @@ class LiveCountdownScheduler @Inject internal constructor(
         now: Instant,
         alert: Boolean,
     ) {
-        val started = content.isStarted(now)
-        val subText = if (started) {
-            content.startedText
-        } else {
-            content.untilText
-        }
+        val slots = content.slotsAt(now)
         val builder = NotificationCompat.Builder(context, COUNTDOWN_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(content.title)
-            .setSubText(subText)
+            .setSubText(slots.subText)
             .setContentText(context.getString(R.string.countdown_body, content.heading, content.startText))
             .setColor(content.color.color.toArgb())
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(!alert)
-            .setTimeoutAfter((content.end.toEpochMilli() - now.toEpochMilli()).coerceAtLeast(0))
+            .setTimeoutAfter(slots.timeoutMillis)
             .setContentIntent(openEventPendingIntent(context, identifier, content.eventId))
-        if (started) {
-            builder.setShowWhen(false)
-        } else {
+        if (slots.countsDown) {
             // 開演までの残りを、端末が 1 秒ごとに数える
             builder
                 .setWhen(content.start.toEpochMilli())
                 .setShowWhen(true)
                 .setUsesChronometer(true)
                 .setChronometerCountDown(true)
+        } else {
+            builder.setShowWhen(false)
         }
         notifyWithTag(context, identifier, builder.build())
     }

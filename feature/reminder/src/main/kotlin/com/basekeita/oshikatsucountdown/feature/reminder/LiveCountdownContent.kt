@@ -33,6 +33,37 @@ internal data class LiveCountdownContent(
     fun isStarted(now: Instant): Boolean = now >= start
 }
 
+/**
+ * 当日のカウントダウンの、標準の通知の枠への置き方。
+ *
+ * iOS 版は「開演まで」のすぐ下に残りを出し、組にして読ませる。標準の通知では、残り（時計）は見出しの行の末尾に出て、
+ * そのすぐ前がサブテキストになる（`ライブ · 開演まで · 2:59:17`）。そのため「開演まで」はサブテキストに入れて時計と組にし、
+ * 推しの名前と開始の時刻は本文に出す（`テイルズ · 開演 17:00`）。開演を過ぎたら、サブテキストを「今日は当日！」にして時計を消す。
+ *
+ * @property subText 見出しの行の、時計のすぐ前に出す文言。
+ * @property countsDown 開演までの残りを通知の時計で数える（開演を過ぎたら数えない）。
+ * @property timeoutMillis 開演の 1 時間後に消えるまでの残り（過ぎていれば 0）。
+ */
+internal data class CountdownSlots(
+    val subText: String,
+    val countsDown: Boolean,
+    val timeoutMillis: Long,
+)
+
+internal fun LiveCountdownContent.slotsAt(now: Instant): CountdownSlots {
+    val started = isStarted(now)
+    val subText = if (started) {
+        startedText
+    } else {
+        untilText
+    }
+    return CountdownSlots(
+        subText = subText,
+        countsDown = !started,
+        timeoutMillis = (end.toEpochMilli() - now.toEpochMilli()).coerceAtLeast(0),
+    )
+}
+
 internal fun liveCountdownContentOf(
     window: LiveCountdownWindow,
     event: OshiEvent,
